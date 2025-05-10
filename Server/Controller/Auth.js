@@ -433,7 +433,9 @@ exports.sendForgetPasswordToken = async (req, res) => {
             });
         };
         console.log("Forget Password Token : " + JSON.stringify(forgetPasswordToken));
-        const URL = `http://localhost:5173/reset-password/${token}`;
+        const URL = process.env.NODE_ENV === "production" ?
+            `https://e-com-site-omega.vercel.app/reset-password/${token}` :
+            `http://localhost:5173/reset-password/${token}`;
         const title = "Forget Password";
         const body = `<h1>Dear User</h1>
         <h2>Please click on below link to reset your password</h2>
