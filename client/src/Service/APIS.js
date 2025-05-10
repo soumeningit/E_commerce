@@ -1,5 +1,5 @@
 const BASE_URL = process.env.NODE_ENV === "production" ?
-    "http://localhost:4000/api" :
+    "https://ecombackend-0ku8.onrender.com/api" :
     "http://localhost:4000/api";
 
 console.log(`API URL: ${BASE_URL}`)
