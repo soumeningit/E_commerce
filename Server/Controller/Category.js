@@ -1,31 +1,23 @@
 const { connect } = require('../Routes/CategoryRoute');
+const { createCategories } = require('../Utils/CreateTable');
 const Connection = require('../Utils/DBConnect');
 
 exports.createCategory = async (req, res) => {
     try {
         console.log("INSIDE CREATE CATEGORY ....");
         const connection = await Connection();
-        const [table] = await connection.execute(`SHOW TABLES LIKE 'categories'`);
-        if (table.length === 0) {
-            const query = `CREATE TABLE categories (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                categori_name VARCHAR(255) NOT NULL UNIQUE,
-                description TEXT DEFAULT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                parent_category_id INT DEFAULT NULL,
-                FOREIGN KEY (parent_category_id) REFERENCES categories(id)
-            )`;
-            const [table] = await connection.execute(query);
-            if (table.length === 0) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Table not created"
-                });
-            }
-            console.log("Table created successfully");
+
+        console.log("req.body : ", req.body);
+
+        const isCategoryTablePresent = await createCategories(connection);
+        if (!isCategoryTablePresent) {
+            return res.status(500).json({
+                success: false,
+                message: "Internal server error"
+            });
+
         }
-        const { name, description, parent_category_id } = req.body;
+        const { name, description, parent_category, userId } = req.body;
         if (!name) {
             return res.status(400).json({
                 success: false,
@@ -34,8 +26,8 @@ exports.createCategory = async (req, res) => {
         }
 
         const [category] = await connection.execute(
-            `INSERT INTO categories (categori_name, description, parent_category_id) VALUES (?, ?, ?)`,
-            [name, description, parent_category_id]
+            `INSERT INTO categories (category_name, categori_desc, parent_category, created_by) VALUES (?, ?, ?, ?)`,
+            [name, description, parent_category, userId]
         );
         if (category.affectedRows === 0) {
             return res.status(400).json({
@@ -150,16 +142,43 @@ exports.findItemsByCategory = async (req, res) => {
                 message: "Category id is required"
             });
         }
-        const [items] = await connection.execute(
-            `SELECT id, product_id, product_name, description, product_image, product_mrp FROM Products WHERE category_id = ?`,
-            [id]
-        );
+
+        const query = `
+                    SELECT
+                        p.id AS product_id,
+                        p.product_name,
+                        p.product_price,
+                        p.product_mrp,
+                        p.initial_quantity,
+                        p.current_stk,
+                        p.category_id,
+                        p.image AS product_image,
+                        p.created_at AS creation_time,
+                        c.category_name,
+                        c.categori_desc,
+                        c.parent_category,
+                        pd.id AS product_description_id,
+                        pd.short_desc,
+                        pd.medium_desc,
+                        pd.long_desc,
+                        u.id AS seller_id,
+                        u.firstName,
+                        u.lastName,
+                        u.email
+                    FROM product_details AS p
+                    JOIN categories AS C ON p.category_id = c.id
+                    JOIN product_description AS pd ON pd.product_id = p.id
+                    JOIN users AS u ON u.id = p.created_by
+                    WHERE p.category_id = ?;
+                `;
+
+        const [items] = await connection.execute(query, [id]);
         if (!items.length) {
-            return res.json({
+            return res.status(404).json({
                 success: false,
-                message: "No items found"
+                message: "No items found for this category"
             });
-        };
+        }
 
         console.log("Items : ", items);
 

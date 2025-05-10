@@ -42,8 +42,8 @@ function SellingItem() {
         />
       </div>
       <div className="bg-[#f8f6f3d7] flex mx-auto gap-x-2 justify-evenly w-[90%] h-[88%]">
-        {groceryItems.map((item) => {
-          return <SellingCard item={item} />;
+        {groceryItems.map((item, index) => {
+          return <SellingCard key={index} item={item} />;
         })}
       </div>
     </div>

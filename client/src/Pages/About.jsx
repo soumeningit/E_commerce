@@ -1,171 +1,162 @@
-// import React, { useState } from "react";
-// import Footer from "../Components/Footer";
-// import { NavLink } from "react-router-dom";
-
-// const locations = [
-//   {
-//     title: "Bengaluru office",
-//     timings: "Mon-Sat 9am to 5pm.",
-//     address: "100, Electronic City Phase-1, Bengaluru, Karnataka 560100 IN",
-//   },
-//   {
-//     title: "Head office",
-//     timings: "Mon-Sat 9am to 5pm.",
-//     address: "12th Main Rd, Indiranagar, Bengaluru, Karnataka 560008 IN",
-//   },
-//   {
-//     title: "Karnataka office",
-//     timings: "Mon-Sat 9am to 5pm.",
-//     address:
-//       "42, Residency Rd, Shanthala Nagar, Ashok Nagar, Bengaluru, Karnataka 560025 IN",
-//   },
-// ];
-
-// const users = [
-//   {
-//     name: "Gabrielle Fernandez",
-//     image:
-//       "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?ixlib=rb-1.2.1&q=80&fm=jpg&crop=faces&fit=crop&h=600&w=600&ixid=eyJhcHBfaWQiOjE3Nzg0fQ",
-//     position: "Marketing Lead",
-//   },
-//   {
-//     name: "Victória Silva",
-//     image:
-//       "https://images.generated.photos/vBRCiI_3UM4l40sU8s7fCwbJwzDwRTGpebzPkfHFsY4/rs:fit:512:512/czM6Ly9pY29uczgu/Z3Bob3Rvcy1wcm9k/LnBob3Rvcy92M18w/ODgyMTAyLmpwZw.jpg",
-//     position: "Back-end developer",
-//   },
-//   {
-//     name: "Gabrielle Fernandez",
-//     image:
-//       "https://images.unsplash.com/photo-1549351512-c5e12b11e283?q=80&fm=jpg&crop=faces&fit=crop&h=600&w=600",
-//     position: "Sales",
-//   },
-//   {
-//     name: "Sadie Lewis",
-//     image:
-//       "https://images.unsplash.com/photo-1485960994840-902a67e187c8?q=80&fm=jpg&crop=faces&fit=crop&h=600&w=600",
-//     position: "Sales",
-//   },
-//   {
-//     name: "Thilde Olaisen",
-//     image:
-//       "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&crop=faces&fit=crop&h=600&w=600",
-//     position: "Marketing Lead",
-//   },
-//   {
-//     name: "Deepika Ramesh",
-//     image:
-//       "https://images.generated.photos/lEhPUYYfYr9IOt13WZZGf2zbXZnCYdU1wUp7gcu_99c/rs:fit:512:512/czM6Ly9pY29uczgu/Z3Bob3Rvcy1wcm9k/LnBob3Rvcy92M18w/Njg5NTQ5LmpwZw.jpg",
-//     position: "Front-end developer",
-//   },
-//   {
-//     name: "Jordi Santiago",
-//     image:
-//       "https://images.pexels.com/photos/2269872/pexels-photo-2269872.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
-//     position: "Front-end developer",
-//   },
-//   {
-//     name: "Kerim Fahri",
-//     image:
-//       "https://images.unsplash.com/photo-1456327102063-fb5054efe647?ixlib=rb-0.3.5&q=80&fm=jpg&crop=faces&fit=crop&h=600&w=600",
-//     position: "Back-end developer",
-//   },
-// ];
-
-// function About() {
-//   const [showForm, setShowFrom] = useState(false);
-
-//   const joinNowHandler = () => {
-//     setShowFrom(true);
-//   };
-
-//   return (
-//     <div>
-//       {/* greetings */}
-//       <div className="mt-16 flex items-center">
-//         <div className="space-y-6 md:w-3/4">
-//           <div className="max-w-max rounded-full border bg-gray-50 p-1 px-3">
-//             <button className="text-xs font-semibold leading-normal md:text-sm">
-//               Join Us
-//             </button>
-//           </div>
-//           <p className="text-3xl font-bold text-gray-900 md:text-4xl">
-//             Meet our team
-//           </p>
-//           <p className="max-w-4xl text-base text-gray-700 md:text-xl">
-//             Our philosophy is simple — hire a team of diverse, passionate people
-//             and foster a culture that empowers you to do your best work.
-//           </p>
-//           <div></div>
-//         </div>
-//       </div>
-//       {/* TEAM */}
-//       <div className="grid grid-cols-1 gap-4 gap-y-6 border-b border-gray-300 py-12 pb-20 md:grid-cols-2 lg:grid-cols-4">
-//         {users.map((user) => (
-//           <div className="rounded-md border" key={user.name}>
-//             <img
-//               src={user.image}
-//               alt={user.name}
-//               className="h-[300px] w-full rounded-lg object-cover "
-//             />
-//             <p className="mt-6 w-full px-2 text-xl  font-semibold text-gray-900">
-//               {user.name}
-//             </p>
-//             <p className="w-full px-2 pb-6 text-sm font-semibold text-gray-500">
-//               {user.position}
-//             </p>
-//           </div>
-//         ))}
-//       </div>
-//       {/* Hiring Banner */}
-//       <div className="flex flex-col items-center gap-x-4 gap-y-4 py-16 md:flex-row">
-//         <div className="space-y-6">
-//           <p className="text-sm font-semibold md:text-base">
-//             Join our team &rarr;
-//           </p>
-//           <p className="text-3xl font-bold md:text-4xl">
-//             We&apos;re just getting started
-//           </p>
-//           <p className="text-base text-gray-600 md:text-lg">
-//             Our philosophy is simple — hire a team of diverse, passionate people
-//             and foster a culture that empowers you to do your best work.
-//           </p>
-//           <NavLink to="/from">
-//             <button
-//               onClick={joinNowHandler}
-//               type="button"
-//               className="rounded-md bg-gray-400 px-3 py-2 text-sm font-semibold text-slate-500 shadow-sm hover:bg-gray-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
-//             >
-//               Join Now
-//             </button>
-//           </NavLink>
-//           {/* {
-//                         showForm && <Form />
-//                     } */}
-//         </div>
-//         <div className="md:mt-o mt-10 w-full">
-//           <img
-//             src="https://images.unsplash.com/photo-1605165566807-508fb529cf3e?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2340&q=80"
-//             alt="Getting Started"
-//             className="rounded-lg"
-//           />
-//         </div>
-//       </div>
-
-//       <Footer />
-//     </div>
-//   );
-// }
-
-// export default About;
 import React from "react";
 
-function About() {
+function AboutPage() {
+  // Dummy team data
+  const teamMembers = [
+    {
+      name: "Jane Doe",
+      role: "Founder & CEO",
+      image: "https://via.placeholder.com/150",
+      bio: "Jane is passionate about bringing quality products to customers worldwide.",
+    },
+    {
+      name: "John Smith",
+      role: "Chief Technology Officer",
+      image: "https://via.placeholder.com/150",
+      bio: "John leads our tech team to build a seamless shopping experience.",
+    },
+    {
+      name: "Emily Brown",
+      role: "Head of Marketing",
+      image: "https://via.placeholder.com/150",
+      bio: "Emily crafts strategies to connect with our amazing customers.",
+    },
+  ];
+
   return (
-    <div>
-      <div>About</div>
+    <div className="bg-gray-50">
+      {/* Hero Section */}
+      <section className="bg-indigo-600 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
+          <h1 className="text-4xl sm:text-5xl font-bold mb-4">
+            About Our Store
+          </h1>
+          <p className="text-lg sm:text-xl max-w-3xl mx-auto">
+            We're dedicated to delivering quality products and exceptional
+            customer experiences. Discover our story and what drives us.
+          </p>
+        </div>
+      </section>
+
+      {/* Our Story Section */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl sm:text-4xl font-bold text-gray-800">
+            Our Story
+          </h2>
+          <p className="text-gray-600 mt-4 max-w-2xl mx-auto">
+            Founded in 2020, our e-commerce platform started with a simple
+            mission: to make high-quality products accessible to everyone. From
+            humble beginnings, we've grown into a trusted name, serving
+            customers globally with passion and dedication.
+          </p>
+        </div>
+        <div className="grid md:grid-cols-2 gap-8 items-center">
+          <div>
+            <img
+              src="https://via.placeholder.com/600x400"
+              alt="Our Story"
+              className="rounded-lg shadow-md w-full object-cover"
+            />
+          </div>
+          <div className="space-y-4">
+            <h3 className="text-2xl font-semibold text-gray-800">
+              Building a Better Shopping Experience
+            </h3>
+            <p className="text-gray-600">
+              We believe in transparency, quality, and customer satisfaction.
+              Every product we offer is carefully curated to meet our high
+              standards, ensuring you get the best value for your money.
+            </p>
+            <p className="text-gray-600">
+              Our team works tirelessly to innovate and improve, from seamless
+              browsing to fast, reliable shipping. We're here to make your
+              shopping journey delightful.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Mission Section */}
+      <section className="bg-white py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-6">
+            Our Mission
+          </h2>
+          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+            To empower customers with choice, quality, and convenience, while
+            fostering a sustainable and inclusive marketplace for all.
+          </p>
+        </div>
+      </section>
+
+      {/* Team Section */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl sm:text-4xl font-bold text-gray-800">
+            Meet Our Team
+          </h2>
+          <p className="text-gray-600 mt-4 max-w-2xl mx-auto">
+            Our dedicated team is the heart of our success, working together to
+            bring you the best shopping experience.
+          </p>
+        </div>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          {teamMembers.map((member) => (
+            <div
+              key={member.name}
+              className="bg-white p-6 rounded-lg shadow-md text-center hover:shadow-lg transition"
+            >
+              <img
+                src={member.image}
+                alt={member.name}
+                className="w-24 h-24 rounded-full mx-auto mb-4 object-cover"
+              />
+              <h3 className="text-xl font-semibold text-gray-800">
+                {member.name}
+              </h3>
+              <p className="text-indigo-600 font-medium">{member.role}</p>
+              <p className="text-gray-600 mt-2">{member.bio}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Contact Section */}
+      <section className="bg-indigo-50 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-6">
+            Get in Touch
+          </h2>
+          <p className="text-gray-600 max-w-2xl mx-auto mb-8">
+            Have questions or need assistance? We're here to help. Reach out to
+            us anytime.
+          </p>
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <a
+              href="mailto:support@store.com"
+              className="bg-indigo-600 text-white px-6 py-3 rounded-lg shadow hover:bg-indigo-700 transition"
+            >
+              Email Us
+            </a>
+            <a
+              href="/contact"
+              className="bg-white text-indigo-600 px-6(rgb(74, 85, 104)) py-3 rounded-lg shadow hover:bg-gray-100 transition border border-indigo-600"
+            >
+              Contact Form
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-gray-800 text-white py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <p>&copy; 2025 Our Store. All rights reserved.</p>
+        </div>
+      </footer>
     </div>
   );
 }
 
-export default About;
+export default AboutPage;

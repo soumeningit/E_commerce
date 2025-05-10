@@ -8,7 +8,6 @@ function ResetPassword() {
   const navigate = useNavigate();
   const location = useLocation();
   const resetToken = location.pathname.split("/")[2];
-  console.log("Reset Token:", resetToken);
 
   const [formdata, setFormData] = useState({
     password: "",
@@ -59,7 +58,7 @@ function ResetPassword() {
       toast.error("Password should be atleast 6 characters long");
       return;
     }
-    console.log(formdata);
+
     try {
       resetPassword(formdata, "POST", navigate);
     } catch (error) {

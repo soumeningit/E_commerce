@@ -20,7 +20,7 @@ function UserLink({ setShowUserLink }) {
   return (
     <div
       ref={modalRef}
-      className="absolute top-20 right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200"
+      className="absolute top-2 right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200"
     >
       <div className="flex justify-end p-2">
         <button

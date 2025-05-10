@@ -6,7 +6,6 @@ import toast from "react-hot-toast";
 
 function OTP() {
   const { signupData } = useSelector((state) => state.auth);
-  // console.log("Signup Data inside OTP : ", signupData);
   const navigate = useNavigate();
   const [otp, setOtp] = useState(["", "", "", ""]);
 
@@ -34,12 +33,10 @@ function OTP() {
 
   const handleSubmit = async () => {
     let otpValue = otp.join("");
-    console.log("OTP Submitted:", otpValue);
     const formData = {
       ...signupData,
       otp: otpValue,
     };
-    console.log("OTP Submitted:", formData);
     try {
       signupUser(formData, "POST", navigate);
     } catch (error) {
@@ -60,7 +57,6 @@ function OTP() {
         firstName: formData.firstName,
         lastName: formData.lastName,
       });
-      console.log("OTP ReSent Successfully", response);
       if (response.data.success) {
         toast.success("OTP ReSent Successfully");
       }

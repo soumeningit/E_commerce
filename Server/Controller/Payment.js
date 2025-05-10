@@ -1,26 +1,31 @@
 const { instance } = require('../Config/razorpay');
-const Connection = require('../Utils/DBConnect');
 const mailSender = require('../Utils/MailSender');
 const { generatePaymentSuccessEmail } = require('../EmailTemplate/PaymentSuccess');
+const dbConnect = require('../Utils/DBConnect');
+const { createPayments, createOrders, createOrderItems } = require('../Utils/CreateTable');
+const crypto = require('crypto');
 
 exports.capturePayment = async (req, res) => {
+    let connection;
     try {
         console.log("INSIDE CAPTURE PAYMENT INSIDE SERVER....")
         console.log("req.body : ", req.body);
-        const { data } = req?.body;
-        const userId = req?.user.id || req?.body?.data?.userId;
+        const { cartItems } = req?.body;
+        const userId = req?.body?.userId;
 
-        if (!data || !userId) {
+        let orderIdFromDB;
+
+        console.log("userId : " + userId);
+
+        if (!userId) {
             return res.status(400).json({
                 success: false,
                 message: "All fields are required"
             });
         };
 
-        console.log("data inside capturePayment : ", data);
         console.log("userId inside capturePayment : ", userId);
 
-        const { cartItems, totalAmount } = data;
         if (cartItems.length === 0) {
             return res.status(400).json({
                 success: false,
@@ -28,10 +33,46 @@ exports.capturePayment = async (req, res) => {
             })
         };
         console.log("cartItems inside capturePayment : ", cartItems);
-        console.log("totalAmount inside capturePayment from frontend : ", totalAmount);
 
-        const connection = await Connection();
-        const [userData] = await connection.execute(`SELECT * FROM users WHERE user_id = ?`, [userId]);
+        const pool = await dbConnect();
+        connection = await pool.getConnection();
+
+        const isPaymentTableExsist = await createPayments(connection);
+        if (!isPaymentTableExsist) {
+            return res.status(401).json({
+                success: false,
+                message: "Server Error"
+            })
+        }
+
+        const isOrderTableExsist = await createOrders(connection);
+        if (!isOrderTableExsist) {
+            return res.status(401).json({
+                success: false,
+                message: "Server Error"
+            })
+        }
+
+        const isCreateOrderItemsExist = await createOrderItems(connection);
+        if (!isCreateOrderItemsExist) {
+            return res.status(401).json({
+                success: false,
+                message: "Server Error"
+            })
+        }
+
+        let email;
+
+        const [userData] = await connection.execute(`SELECT * FROM users WHERE id = ?`, [userId]);
+
+        console.log("userData : " + userData);
+        console.log("userData : " + JSON.stringify(userData));
+
+        email = userData[0].email;
+        console.log("email : ", email);
+
+        const name = userData[0].firstName + " " + userData[0].lastName;
+        console.log("name : ", name);
 
         if (userData.length === 0) {
             return res.status(400).json({
@@ -40,31 +81,59 @@ exports.capturePayment = async (req, res) => {
             })
         }
 
-        const quantity = data?.quantity;
-        let amount = 0;
+        let totalAmount = 0;
+        let amountFromAPI = 0;
 
-        let productData = [];
+        const [orderInitiateData] = await connection.execute(
+            `INSERT INTO Orders (is_order_initiated, order_initiation_time, user_id) VALUES (?, ?, ?)`,
+            [1, new Date(), userId]
+        );
 
-        for (let key in quantity) {
-            console.log("key : ", key);
-            console.log("quantity : ", quantity[key]);
+        if (orderInitiateData.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Error while inserting into order table"
+            })
+        }
 
-            [productData] = await connection.execute(`SELECT * FROM products WHERE product_id = ? AND stocks > ?`, [key, quantity[key]]);
+        console.log("orderInitiateData : ", JSON.stringify(orderInitiateData));
+
+        orderIdFromDB = orderInitiateData.insertId;
+        console.log("orderId : ", orderIdFromDB);
+
+        for (let i = 0; i < cartItems.length; i++) {
+            const [productData] = await connection.execute(`SELECT * FROM product_details WHERE id = ?`, [cartItems[i].product_id]);
             if (productData.length === 0) {
                 return res.status(400).json({
                     success: false,
-                    message: "Product out of stock"
+                    message: "Product not found"
+                })
+            }
+            const quantity = cartItems[i].quantity;
+            console.log("quantity : ", quantity);
+            const dbPrice = productData[0].product_mrp;
+            console.log("dbPrice : ", dbPrice);
+            totalAmount += Number(dbPrice) * Number(quantity);
+            amountFromAPI += Number(cartItems[i].price_per_item) * Number(quantity);
+            console.log("amountFromAPI : ", amountFromAPI);
+            console.log("totalAmount : ", totalAmount);
+
+            const [orderItemTableData] = await connection.execute(
+                `INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)`,
+                [orderIdFromDB, cartItems[i].product_id, cartItems[i].quantity, cartItems[i].price_per_item]
+            )
+            if (orderItemTableData.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Error while inserting into order table"
                 })
             }
 
-            console.log("productData : ", productData);
-
-            amount += productData[0].product_mrp * quantity[key];
         }
 
-        console.log("amount : ", amount);
+        console.log("totalAmount : ", totalAmount);
 
-        if (amount !== totalAmount) {
+        if (String(totalAmount) !== String(amountFromAPI)) {
             return res.status(400).json({
                 success: false,
                 message: "Amount mismatch"
@@ -72,7 +141,6 @@ exports.capturePayment = async (req, res) => {
         }
 
         console.log("Amount matched");
-        console.log("totalAmount : ", totalAmount);
 
         const options = {
             amount: totalAmount * 100,  // Amount is in currency subunits. Default currency is INR. Hence, 50000 refers to 50000 paise
@@ -90,85 +158,46 @@ exports.capturePayment = async (req, res) => {
 
         console.log("order : ", order);
 
-        const [isOrderTable] = await connection.execute(`SHOW TABLES LIKE 'Orders'`);
-        console.log("isOrderTable : ", isOrderTable);
-        if (isOrderTable.length === 0) {
-            const [orderTable] = await connection.execute(
-                `CREATE TABLE Orders (
-                    id INT PRIMARY KEY AUTO_INCREMENT,
-                    order_id VARCHAR(50) NOT NULL,  -- Not unique because multiple products can have the same order_id
-                    user_id INT NOT NULL,
-                    total_amount INT CHECK (total_amount >= 0),  -- Stores total order cost
-                    time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
-                    INDEX (order_id)  -- Explicitly index order_id for foreign key usage
-                );`
-            );
-            if (!orderTable) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Error while creating order table"
-                })
-            }
-            console.log("orderTable : ", JSON.stringify(orderTable));
-        }
-
-        const [isOrderItemTable] = await connection.execute(`SHOW TABLES LIKE 'Order_Items'`);
-        console.log("isOrderItemTable : ", isOrderItemTable);
-        if (isOrderItemTable.length === 0) {
-            const [orderItemTable] = await connection.execute(
-                `CREATE TABLE Order_Items (
-                    id INT PRIMARY KEY AUTO_INCREMENT,
-                    order_id VARCHAR(50) NOT NULL,  -- Foreign key linking to Orders
-                    product_id VARCHAR(50) NOT NULL,
-                    quantity INT NOT NULL CHECK (quantity > 0), -- Ensures positive quantity
-                    price INT NOT NULL CHECK (price >= 0), -- Stores the price of a single unit
-                    FOREIGN KEY (order_id) REFERENCES Orders(order_id) ON DELETE CASCADE,
-                    FOREIGN KEY (product_id) REFERENCES Products(product_id) ON DELETE CASCADE
-                );`
-            );
-            if (!orderItemTable) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Error while creating order item table"
-                })
-            }
-            console.log("orderItemTable : ", JSON.stringify(orderItemTable));
-        }
-
-        const [orderData] = await connection.execute(
-            `INSERT INTO Orders (order_id, user_id, total_amount) VALUES (?, ?, ?)`,
-            [order.id, userId, totalAmount]
+        const [updateOrder] = await connection.execute(
+            `UPDATE Orders SET order_id = ?, total_price = ? WHERE id = ?`,
+            [order.id, totalAmount, orderIdFromDB]
         );
 
-        if (orderData.length === 0) {
+        if (updateOrder.length === 0) {
             return res.status(400).json({
                 success: false,
-                message: "Error while inserting into order table"
+                message: "Error while updating order table"
+            })
+        }
+        console.log("updateOrder : ", JSON.stringify(updateOrder));
+
+        let payment_id;
+        const [paymentData] = await connection.execute(
+            `INSERT INTO payments (payment_amount, order_id, is_payment_initiated, payment_initiate_time, payment_initiator_id) VALUES(?, ?, ?, ?, ?) `,
+            [totalAmount, orderIdFromDB, 1, new Date(), userId,]
+        );
+
+        if (paymentData.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Error while inserting into payment table"
             })
         }
 
-        console.log("orderData : ", JSON.stringify(orderData));
+        payment_id = paymentData.insertId;
 
-        for (let key in quantity) {
-            let amountData = amount - productData[0].product_mrp * quantity[key];
-            const [orderItemTableData] = await connection.execute(
-                `INSERT INTO Order_Items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)`,
-                [order.id, key, quantity[key], amountData]
-            )
-            if (orderItemTableData.length === 0) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Error while inserting into order table"
-                })
-            }
-            console.log("orderItemTableData : ", JSON.stringify(orderItemTableData));
-        }
+        console.log("payment_id : " + payment_id);
+
         return res.status(200).json({
             success: true,
             message: "Order created successfully",
             data: order,
-            keyId: process.env.RAZORPAY_KEY_ID
+            keyId: process.env.RAZORPAY_KEY_ID,
+            email: email,
+            name: name,
+            amount: totalAmount,
+            order_id: orderIdFromDB,
+            payment_id: payment_id
         })
 
     } catch (error) {
@@ -182,16 +211,21 @@ exports.capturePayment = async (req, res) => {
 }
 
 exports.paymentSuccess = async (req, res) => {
+    let connection;
     try {
         console.log("INSIDE PAYMENT SUCCESS SERVER....");
         console.log("req.body : ", req.body);
         const { razorpay_payment_id, razorpay_order_id, razorpay_signature } = req?.body?.response;
-        const userId = req?.user.id;
-        const { amount } = req?.body;
+        const { userId } = req.body;
+        const { amount } = req.body;
+        const { order_id } = req.body;
         console.log("razorpay_payment_id : " + razorpay_payment_id, " razorpay_order_id : " + razorpay_order_id + " razorpay_signature : " + razorpay_signature + " userId : " + userId);
+        console.log("order_id : " + order_id);
 
-        const connection = await Connection();
-        const [userDetails] = await connection.execute(`SELECT * FROM users WHERE user_id = ?`, [userId]);
+        const pool = await dbConnect();
+        connection = await pool.getConnection();
+
+        const [userDetails] = await connection.execute(`SELECT * FROM users WHERE id = ?`, [userId]);
         if (userDetails.length === 0) {
             return res.status(400).json({
                 success: false,
@@ -200,34 +234,6 @@ exports.paymentSuccess = async (req, res) => {
         }
         console.log("userDetails : ", JSON.stringify(userDetails));
         const name = userDetails[0].firstName + " " + userDetails[0].lastName;
-
-        const [paymentTable] = await connection.execute(`SHOW TABLES LIKE 'payments'`);
-
-        console.log("paymentTable : ", paymentTable);
-
-        if (paymentTable.length === 0) {
-            const [paymentTableData] = await connection.execute(
-                `CREATE TABLE Payments (
-                    id INT PRIMARY KEY AUTO_INCREMENT,
-                    payment_id VARCHAR(255) NOT NULL,
-                    order_id VARCHAR(255) NOT NULL,
-                    amount INT NOT NULL,
-                    payment_mode ENUM('credit_card', 'debit_card', 'upi', 'net_banking', 'wallet', 'cash'),
-                    transaction_id VARCHAR(255) UNIQUE,
-                    payment_status ENUM('success', 'failed', 'pending', 'refunded') DEFAULT 'pending',
-                    payment_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY(order_id) REFERENCES Orders(order_id) ON DELETE CASCADE
-                    );`
-            );
-            if (!paymentTableData) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Error while creating payment table"
-                })
-            }
-
-            console.log("paymentTableData : ", JSON.stringify(paymentTableData));
-        }
 
         const emailResponse = await mailSender(userDetails[0].email, "Payment Complete", generatePaymentSuccessEmail(name, razorpay_payment_id, razorpay_order_id, amount / 100, 'E-Com', new Date().getFullYear()));
         console.log("emailResponse : ", emailResponse);
@@ -238,23 +244,11 @@ exports.paymentSuccess = async (req, res) => {
             })
         }
 
-        const [paymentData] = await connection.execute(
-            `INSERT INTO Payments (payment_id,order_id, amount, transaction_id) VALUES (?, ?, ?, ?)`,
-            [razorpay_payment_id, razorpay_order_id, amount, razorpay_payment_id]
-        );
-
-        if (paymentData.length === 0) {
-            return res.status(400).json({
-                success: false,
-                message: "Error while inserting into payment table"
-            })
-        }
-
         console.log("paymentData : ", JSON.stringify(paymentData));
 
         return res.status(200).json({
             success: true,
-            message: "Payment Successfull"
+            message: "Payment Successfull",
         })
     } catch (error) {
         console.log("Payment Success failed : ", error)
@@ -268,12 +262,29 @@ exports.paymentSuccess = async (req, res) => {
 };
 
 exports.verifyPayment = async (req, res) => {
+    let connection;
+    console.log("req.body inside verify: ", req.body);
     try {
         console.log("INSIDE VERIFY PAYMENT SERVER....");
-        const razorpay_payment_id = req?.body.razorpay_payment_id;
-        const razorpay_order_id = req?.body.razorpay_order_id;
-        const razorpay_signature = req?.body.razorpay_signature;
-        const userId = req?.user.id;
+        const pool = await dbConnect();
+        connection = await pool.getConnection();
+
+        const {
+            razorpay_payment_id,
+            razorpay_order_id,
+            razorpay_signature,
+            userId,
+            order_id,
+            payment_id,
+            amount } = req.body;
+
+        console.log("razorpay_payment_id " + razorpay_payment_id + "razorpay_order_id " + razorpay_order_id + " razorpay_signature : " + " userId : " + userId + " order_id : " + order_id + " payment_id : " + payment_id)
+
+        const [paymentResponse] = await connection.execute(`UPDATE payments SET is_verify_payment_initiated = ?, verify_payment_initiation_time = ?, razorpay_payment_id = ?, razorpay_order_id = ? WHERE id = ?`,
+            [1, new Date(), razorpay_payment_id, razorpay_order_id, payment_id]
+        )
+
+        console.log("paymentResponse inside verify payment : " + JSON.stringify(paymentResponse));
 
         console.log("razorpay_payment_id : " + razorpay_payment_id, " razorpay_order_id : " + razorpay_order_id +
             " razorpay_signature : " + razorpay_signature + " userId : " + userId
@@ -288,8 +299,11 @@ exports.verifyPayment = async (req, res) => {
             console.log("All fields are nedded....")
         }
 
-        const connection = await Connection();
-        const [userDetails] = await connection.execute(`SELECT * FROM users WHERE user_id = ?`, [userId]);
+        const [userDetails] = await connection.execute(`SELECT * FROM users WHERE id = ?`, [userId]);
+
+        console.log("userDetails + " + JSON.stringify(userDetails));
+
+        const name = userDetails[0].firstName + " " + userDetails[0].lastName;
 
         let body = razorpay_order_id + "|" + razorpay_payment_id;
         let expectedSignature = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
@@ -298,12 +312,10 @@ exports.verifyPayment = async (req, res) => {
 
         if (expectedSignature == razorpay_signature) {
             const [updatePayment] = await connection.execute(
-                `UPDATE Payments SET payment_status = 'success' WHERE payment_id = ?`,
-                [razorpay_payment_id]
+                `UPDATE payments SET payment_complete = ?, payment_completion_time = ? WHERE id = ?`,
+                [1, new Date(), payment_id]
             );
-            // const data = {
 
-            // }
             if (updatePayment.length === 0) {
                 console.log("Payment not updated")
                 return res.status(400).json({
@@ -313,10 +325,62 @@ exports.verifyPayment = async (req, res) => {
             }
             console.log("razorpay signature : ", razorpay_signature);
             console.log("Payment verified");
+
+            const [updateOrderResponse] = await connection.execute(`UPDATE orders SET order_status = ?, order_completion_time = ? where id = ?`,
+                ['completed', new Date(), order_id]
+            );
+
+            console.log("updateOrderResponse : " + JSON.stringify(updateOrderResponse))
+
+            if (updateOrderResponse.length === 0) {
+                console.log("Order not updated")
+                return res.status(400).json({
+                    success: false,
+                    message: "Order not updated"
+                });
+            }
+
+            const [orderItems] = await connection.execute(
+                `SELECT * FROM order_items WHERE order_id = ?`,
+                [order_id]
+            )
+
+            console.log("orderItems : ", JSON.stringify(orderItems));
+
+            if (orderItems.length === 0) {
+                console.log("Order items not updated")
+                return res.status(400).json({
+                    success: false,
+                    message: "Order items not founfd"
+                });
+            }
+
+            for (let i = 0; i < orderItems.length; i++) {
+                const [updateProductDetails] = await connection.execute(
+                    `UPDATE product_details SET current_stk = current_stk - ? WHERE id = ?`,
+                    [orderItems[i].quantity, orderItems[i].product_id]
+                )
+                if (updateProductDetails.length === 0) {
+                    console.log("Product details not updated")
+                    return res.status(400).json({
+                        success: false,
+                        message: "Product details not updated"
+                    });
+                }
+            }
+
+            let responseData = {};
+
+            responseData.name = name;
+            responseData.paymentId = razorpay_payment_id;
+            responseData.orderId = razorpay_order_id;
+            responseData.amount = amount;
+
             return res.status(200).json({
                 success: true,
                 message: "Payment verified successfully",
-                payment: true
+                payment: true,
+                data: responseData
             })
 
         }
@@ -328,129 +392,5 @@ exports.verifyPayment = async (req, res) => {
                 status: false,
                 message: "Verification of Payment failed : " + error
             })
-    }
-}
-
-
-const enrolledStudent = async (userId, courses, res) => {
-    try {
-        console.log("enrolledStudent....")
-        if (!userId || !courses) {
-            return res.status(401).json({
-                success: false,
-                message: "User not found"
-            })
-        }
-
-        for (let courseId of courses) {
-            try {
-                console.log("enrolledStudent....")
-                const enrolledCourse = await Course.findOneAndUpdate(
-                    { _id: courseId },
-                    { $push: { studentsEnrolled: userId } },
-                    { new: true },
-                )
-
-                // console.log("enrolledCourse inside enrolledStudent: ", enrolledCourse)
-
-                if (!enrolledCourse) {
-                    console.log("course not found")
-                }
-
-                const courseProgress = await CourseProgress.create({
-                    courseId: courseId,
-                    userId: userId,
-                    courseProgress: []
-                })
-
-                const enrolledStudent = await User.findByIdAndUpdate(
-                    userId,
-                    {
-                        $push: {
-                            courses: courseId,
-                            courseProgress: courseProgress._id
-                        },
-                    },
-                    { new: true }
-                )
-                // console.log("enrolledStudent inside enrolledStudent: ", enrolledStudent)
-
-                if (!enrolledStudent) {
-                    console.log("User not found")
-                }
-
-                const emailResponse = await mailSender(
-                    enrolledStudent.email,
-                    "Order Complete! Starts Learning",
-                    CourseEnrollmentEmail(enrolledCourse?.courseName, enrolledStudent?.firstName)
-                    // CourseEnrollmentEMail(`${enrolledCourse.courseName}, ${enrolledStudent.firstName}`)
-                )
-
-                // console.log("emailResponse : ", emailResponse)
-
-
-            } catch (error) {
-                console.log("Error in enrolledStudent : ", error)
-            }
-
-        }
-
-        return {
-            success: true,
-            message: "All courses enrolled successfully"
-        };
-
-    } catch (error) {
-        console.log("Enrolled Student failed : ", error)
-        return res.status(400)
-            .json({
-                status: false,
-                message: "Enrolled Student failed : " + error
-            })
-    }
-}
-
-exports.sendPaymentSuccessEmail = async (req, res) => {
-    try {
-        console.log("Inside sendPaymentSuccessEmail in server....")
-        const { orederId, paymentId, amount } = req?.body;
-        const userId = req?.user.id;
-
-        console.log("orderId, paymentId, amount, userId", orederId, paymentId, amount, userId)
-
-        if (!orederId || !paymentId || !amount || !userId) {
-
-            console.log("Order Id, Payment Id, User Id, and Amount are required")
-
-        }
-
-        try {
-            const studentName = await User.findById({ _id: userId });
-            console.log("Student Name : ", studentName);
-
-            await mailSender(
-                studentName.email,
-                "Payment Successfull",
-                PaymentSuccessmail(`${studentName.firstName} ${studentName.lastName}`, amount / 100, paymentId, orederId),
-            )
-
-            return res.status(200)
-                .json({
-                    success: true,
-                    message: "Payment Successfull",
-                })
-
-        }
-        catch (e) {
-            console.log("Error in sending email : ", e)
-        }
-
-
-    } catch (error) {
-        console.log("Error in sendPaymentSuccessEmail : ", error)
-        return res.status(400).json({
-            success: false,
-            message: "Error in sendPaymentSuccessEmail : " + error
-        })
     }
 }

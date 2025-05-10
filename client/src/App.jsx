@@ -1,5 +1,4 @@
 import "./App.css";
-import Home from "./Components/HomeComponenet";
 import { Routes, Route } from "react-router-dom";
 import Groceries from "./Pages/Groceries";
 import Navbar from "./Components/Navbar";
@@ -23,8 +22,20 @@ import PrivateRoute from "./Utils/PrivateRoute";
 import MyProfile from "./Dashboard/MyProfile";
 import ProductDetails from "./Components/ProductDetails";
 import PaymentSuccessPage from "./Pages/PaymentSuccessPage";
+import Home from "./Pages/Home";
+import AllUsers from "./Admin/AllUsers";
+import { useSelector } from "react-redux";
+import Notifications from "./Admin/Notifications";
+import UserNotifications from "./Dashboard/UserNotifications";
+import Orders from "./Dashboard/Orders";
+import SellProduct from "./Dashboard/SellProduct";
+import VerifyUser from "./Dashboard/VerifyUser";
+import ProductPage from "./Pages/ProductPage";
+import OrderDetails from "./Pages/OrderDetails";
 
 function App() {
+  const { user } = useSelector((state) => state.auth);
+
   return (
     <>
       <Navbar />
@@ -46,6 +57,8 @@ function App() {
         <Route path="/reset-password/:id" element={<ResetPassword />} />
         <Route path="/product/:id" element={<ProductDetails />} />
         <Route path="/payment-success" element={<PaymentSuccessPage />} />
+        <Route path="/:name/product-details/:id" element={<ProductPage />} />
+        <Route path="/order-details/:oid/:pid" element={<OrderDetails />} />
         <Route
           element={
             <PrivateRoute>
@@ -56,6 +69,24 @@ function App() {
           <Route path="/dashboard/myprofile" element={<MyProfile />} />
           <Route path="/dashboard/setting" element={<Settings />} />
           <Route path="/dashboard/product" element={<Products />} />
+          <Route path="/dashboard/verify-user" element={<VerifyUser />} />
+          <Route
+            path="/dashboard/notifications"
+            element={<UserNotifications />}
+          />
+          <Route path="/dashboard/order" element={<Orders />} />
+          <Route path="/dashboard/sell-product" element={<SellProduct />} />
+          {user?.role === "admin" && (
+            <>
+              <Route path="/dashboard/admin/users" element={<AllUsers />} />
+              <Route
+                path="/dashboard/admin/notifications"
+                element={<Notifications />}
+              />
+            </>
+          )}
+
+          <Route path="*" element={<h1>Page Not Found</h1>} />
         </Route>
       </Routes>
     </>

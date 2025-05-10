@@ -1,23 +1,56 @@
 const Connection = require("../Utils/DBConnect");
 
 
-exports.getVendors = async (req, res) => {
+exports.getPendingUsers = async (req, res) => {
+
+    let connection;
     try {
-        console.log("INSIDE GET VENDORS ....");
-        const connection = await Connection();
-        const [vendors] = await connection.execute(`
-            SELECT * FROM Product_Provider_Details;
-        `);
-        if (vendors.length === 0) {
+        console.log("INSIDE VERIFY USER ....");
+
+        const pool = await Connection();
+        connection = await pool.getConnection();
+
+        const query = `
+                    SELECT
+                        u.id AS user_id,
+                        u.firstName,
+                        u.middleName,
+                        u.lastName,
+                        u.email,
+                        u.mobileNo,
+                        u.role,
+                        u.image,
+                        u.is_verified,
+                        u.is_authorised,
+                        u.created_at,
+                        a.address,
+                        a.city,
+                        a.state,
+                        a.pin_code,
+                        a.country,
+                        a.dob,
+                        ppd.status AS user_status,
+                        ppd.public_id_type,
+                        ppd.public_id,
+                        ppd.unique_id,
+                        ppd.public_id_image
+                    FROM users AS u
+                    JOIN additional_details AS a ON u.id = a.user_id
+                    JOIN product_provider_details AS ppd ON u.id = ppd.user_id
+                    WHERE u.role != ? AND u.is_verified = ? AND u.is_authorised = ? AND ppd.status = ?;`;
+        const [users] = await connection.execute(query, ["admin", true, false, "applied"]);
+
+        if (users.length === 0) {
             return res.status(404).json({
                 success: false,
-                message: "No vendors found"
+                message: "No users found"
             });
         }
+        console.log("users : " + JSON.stringify(users));
         return res.status(200).json({
             success: true,
             message: "Vendors found",
-            data: vendors
+            data: users
         });
     } catch (error) {
         console.log(`Error in getVendors ${error}`);
@@ -28,75 +61,258 @@ exports.getVendors = async (req, res) => {
     }
 };
 
-exports.verifiedVendor = async (req, res) => {
+exports.verifyUser = async (req, res) => {
+    let connection;
     try {
-        console.log("INSIDE VERIFIED VENDOR ....");
-        console.log("req.body : " + JSON.stringify(req.body));
+        console.log("INSIDE VERIFY USER ....");
 
-        const { email, status, role } = req.body;
-        if (!email) {
+        const pool = await Connection();
+        connection = await pool.getConnection();
+
+        console.log("req.body : ", req.body);
+
+        const users = req.body.userId;
+        console.log("Users : ", users);
+
+        if (!Array.isArray(users) || users.length === 0) {
             return res.status(400).json({
                 success: false,
-                message: "Email is required"
-            });
-        }
-        if (!status) {
-            return res.status(400).json({
-                success: false,
-                message: "Status is required"
-            });
-        }
-        const connection = await Connection();
-
-        const [vendorDetails] = await connection.execute(`
-            SELECT * FROM Product_Provider_Details WHERE email = ?`, [email]
-        );
-        if (vendorDetails.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: "Vendor not found"
-            });
-        }
-        console.log("Vendor details : " + JSON.stringify(vendorDetails));
-
-        const [vendor] = await connection.execute(`
-            UPDATE Product_Provider_Details SET status = ? WHERE email = ?; `, [status, email]
-        );
-
-        if (vendor.affectedRows === 0) {
-            console.log("Vendor status not updated");
-            return res.status(500).json({
-                success: false,
-                message: "Internal server error"
+                message: "No users provided"
             });
         }
 
-        console.log("vendor : " + JSON.stringify(vendor));
+        for (let userId of users) {
+            const [userDetails] = await connection.execute(
+                `SELECT * FROM product_provider_details WHERE user_id = ?`,
+                [userId]
+            );
 
-        const [updateUser] = await connection.execute(`
-            UPDATE USERS SET role = ? WHERE user_id = ?; `, [role, vendorDetails[0].user_id]
-        );
+            if (userDetails.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: `User ID ${userId} not found`
+                });
+            }
 
-        if (updateUser.affectedRows === 0) {
-            console.log("User role not updated");
-            return res.status(500).json({
-                success: false,
-                message: "Internal server error"
-            });
+            const status = userDetails[0].status;
+
+            if (status === "verified") {
+                return res.status(400).json({
+                    success: false,
+                    message: `User ID ${userId} is already verified`
+                });
+            }
+
+            const [userData] = await connection.execute(
+                `UPDATE users SET is_verified = ?, is_authorised = ?, role = ? WHERE id = ?`,
+                [1, 1, "vendor", userId]
+            );
+
+            if (userData.affectedRows === 0) {
+                return res.status(500).json({
+                    success: false,
+                    message: `Failed to update user ID ${userId}`
+                });
+            }
+
+            const [vendorData] = await connection.execute(
+                `UPDATE product_provider_details SET status = ? WHERE user_id = ?`,
+                ["verified", userId]
+            );
+
+            if (vendorData.affectedRows === 0) {
+                return res.status(500).json({
+                    success: false,
+                    message: `Failed to update vendor status for user ID ${userId}`
+                });
+            }
         }
-
-        console.log("updateUser : " + JSON.stringify(updateUser));
 
         return res.status(200).json({
             success: true,
-            message: "Vendor verified successfully"
+            message: "All users verified successfully"
         });
 
     } catch (error) {
-        console.log(`Error verfied vendor ${error}`);
+        console.error("Error verifying users:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error"
+        });
+    } finally {
+        if (connection) connection.release();
+    }
+};
+
+
+exports.getAllUsers = async (req, res) => {
+    try {
+        console.log("INSIDE GET ALL USERS ....");
+        const connection = await Connection();
+
+        const query = `
+                    SELECT
+                        u.id AS user_id,
+                        u.firstName,
+                        u.middleName,
+                        u.lastName,
+                        u.email,
+                        u.mobileNo,
+                        u.role,
+                        u.image,
+                        u.is_verified,
+                        u.is_authorised,
+                        u.created_at,
+                        a.address,
+                        a.city,
+                        a.state,
+                        a.pin_code,
+                        a.country,
+                        a.dob
+                    FROM users AS u
+                    JOIN additional_details AS a ON u.id = a.user_id
+                    WHERE u.role != 'admin' AND u.is_verified = true;`;
+
+        const [users] = await connection.execute(query);
+        if (users.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "No users found"
+            });
+        }
+        return res.status(200).json({
+            success: true,
+            message: "Users found",
+            data: users
+        });
+    } catch (error) {
+        console.log(`Error in getAllUsers ${error}`);
         return res.status(501).json({
             success: false,
             message: "Internal server error"
         })
     }
-};
+}
+
+exports.blockUser = async (req, res) => {
+    try {
+        console.log("INSIDE BLOCK USER ....");
+        const connection = await Connection();
+
+        const id = req.params;
+        console.log("id : " + JSON.stringify(id));
+        const userId = id.id;
+        console.log("userId : " + userId);
+        if (!userId) {
+            return res.status(400).json({
+                success: false,
+                message: "User ID is required"
+            });
+        }
+        const [user] = await connection.execute(`
+            UPDATE users SET is_verified = false WHERE id = ?; `, [userId]
+        );
+        if (user.affectedRows === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+        return res.status(200).json({
+            success: true,
+            message: "User blocked successfully"
+        });
+    } catch (error) {
+        console.log(`Error in blockUser ${error}`);
+        return res.status(501).json({
+            success: false,
+            message: "Internal server error"
+        })
+    }
+}
+
+exports.getAllBlockedUsers = async (req, res) => {
+    try {
+        console.log("INSIDE GET ALL USERS ....");
+        const connection = await Connection();
+
+        const query = `
+                    SELECT
+                        u.id AS user_id,
+                        u.firstName,
+                        u.middleName,
+                        u.lastName,
+                        u.email,
+                        u.mobileNo,
+                        u.role,
+                        u.image,
+                        u.is_verified,
+                        u.is_authorised,
+                        u.created_at,
+                        a.address,
+                        a.city,
+                        a.state,
+                        a.pin_code,
+                        a.country,
+                        a.dob
+                    FROM users AS u
+                    JOIN additional_details AS a ON u.id = a.user_id
+                    WHERE u.role != 'admin' AND u.is_verified = false;`;
+
+        const [users] = await connection.execute(query);
+        if (users.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "No users found"
+            });
+        }
+        return res.status(200).json({
+            success: true,
+            message: "Users found",
+            data: users
+        });
+    } catch (error) {
+        console.log(`Error in getAllUsers ${error}`);
+        return res.status(501).json({
+            success: false,
+            message: "Internal server error"
+        })
+    }
+}
+
+exports.unBlockUser = async (req, res) => {
+    try {
+        console.log("INSIDE BLOCK USER ....");
+        const connection = await Connection();
+
+        const id = req.params;
+        console.log("id : " + JSON.stringify(id));
+        const userId = id.id;
+        console.log("userId : " + userId);
+        if (!userId) {
+            return res.status(400).json({
+                success: false,
+                message: "User ID is required"
+            });
+        }
+        const [user] = await connection.execute(`
+            UPDATE users SET is_verified = true WHERE id = ?; `, [userId]
+        );
+        if (user.affectedRows === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+        return res.status(200).json({
+            success: true,
+            message: "User un-blocked successfully"
+        });
+    } catch (error) {
+        console.log(`Error in un-blockUser ${error}`);
+        return res.status(501).json({
+            success: false,
+            message: "Internal server error"
+        })
+    }
+}

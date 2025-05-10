@@ -1,8 +1,15 @@
-const mysql = require('mysql2');
-require('dotenv').config();
+const mysql = require("mysql2");
+require("dotenv").config();
 
 const dbConnect = async () => {
     try {
+        // Validate environment variables
+        const requiredEnvVars = ["DB_HOST", "DATABASE_USER", "DATABASE_PASSWORD", "DATABASE_NAME"];
+        const missingVars = requiredEnvVars.filter((varName) => !process.env[varName]);
+        if (missingVars.length > 0) {
+            throw new Error(`Missing environment variables: ${missingVars.join(", ")}`);
+        }
+
         const tempConnection = mysql.createConnection({
             host: process.env.DB_HOST,
             user: process.env.DATABASE_USER,
@@ -14,11 +21,15 @@ const dbConnect = async () => {
             [process.env.DATABASE_NAME]
         );
         if (rows.length === 0) {
-            await tempConnection.execute(`CREATE DATABASE ${process.env.DATABASE_NAME}`);
+            await tempConnection.execute(`CREATE DATABASE ??`, [process.env.DATABASE_NAME]);
         } else {
             console.log("Database already exists");
         }
-        tempConnection.end();
+        try {
+            await tempConnection.end();
+        } catch (error) {
+            console.error("Error closing temporary connection: ", error);
+        }
 
         const pool = mysql.createPool({
             host: process.env.DB_HOST,
@@ -27,8 +38,8 @@ const dbConnect = async () => {
             password: process.env.DATABASE_PASSWORD,
             waitForConnections: true,
             connectionLimit: 10,
-            maxIdle: 10, // max idle connections, the default value is the same as `connectionLimit`
-            idleTimeout: 60000, // idle connections timeout, in milliseconds, the default value 60000
+            maxIdle: 10,
+            idleTimeout: 60000,
             queueLimit: 0,
             enableKeepAlive: true,
             keepAliveInitialDelay: 0,
@@ -36,8 +47,9 @@ const dbConnect = async () => {
 
         return pool.promise();
     } catch (error) {
-        console.log("Error in DBConnect: ", error);
+        console.error("Error in DBConnect: ", error);
+        throw error;
     }
-}
+};
 
 module.exports = dbConnect;

@@ -3,10 +3,13 @@ const router = express.Router();
 
 const { auth, isVendor } = require('../Middleware/AuthMiddleWare');
 
-const { createProduct, getProducts, searchProduct } = require('../Controller/Product');
+const { createProduct, getProducts, searchProduct, getProductById, getParticularProductDetails, getReviews } = require('../Controller/Product');
 
 router.post('/create-product', auth, isVendor, createProduct);
 router.get('/get-product', getProducts);
-router.post('/search-item', auth, searchProduct);
+router.get('/search-item', searchProduct);
+router.get('/get-product-by-id', auth, isVendor, getProductById);
+router.get('/get-product-details-by-id', getParticularProductDetails);
+router.get('/get-reviews', getReviews);
 
 module.exports = router;

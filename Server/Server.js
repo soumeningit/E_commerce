@@ -12,6 +12,8 @@ const productVendorRoute = require('./Routes/ProductVendorRoute');
 const adminRoute = require('./Routes/AdminRoute');
 const cartRoute = require('./Routes/CartRoute');
 const paymentRoute = require('./Routes/PaymentRoute');
+const profileRoute = require('./Routes/ProfileRoute');
+const orderRoute = require('./Routes/OrderRoute');
 
 const PORT = 4000;
 
@@ -46,6 +48,8 @@ app.use('/api/product-vendor', productVendorRoute);
 app.use('/api/admin', adminRoute);
 app.use('/api/cart', cartRoute);
 app.use('/api/payment', paymentRoute);
+app.use('/api/profile', profileRoute);
+app.use('/api/order', orderRoute);
 
 
 app.get('/', (req, res) => {

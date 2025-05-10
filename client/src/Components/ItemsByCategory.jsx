@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   findItemsByCategory,
-  getCategories,
+  getCategoriesAPI,
 } from "../Service/Operations/CategoryOpern";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
@@ -17,9 +17,11 @@ function ItemsByCategory() {
   useEffect(() => {
     async function fetchCategories() {
       try {
-        const response = await getCategories("GET");
-        // console.log("Response : ", response);
-        setCategories(response.data.data);
+        const response = await getCategoriesAPI("GET");
+        if (response.status === 200) {
+          setCategories(response.data.data);
+          itemsByCategory(response.data.data[0].id);
+        }
       } catch (error) {
         console.log("Error in ItemsByCategory : ", error);
       }
@@ -28,23 +30,24 @@ function ItemsByCategory() {
   }, []);
 
   async function itemsByCategory(id) {
-    console.log("Category Id : ", id);
     try {
       const response = await findItemsByCategory("GET", id);
-      console.log("Response : ", response);
       setItems(response.data.data);
     } catch (error) {
       console.log("Error in ItemsByCategory : ", error);
     }
   }
 
-  function handleCardClick(id) {
-    console.log("Card Clicked");
-    console.log("Product Id : ", id);
+  function handleCardClick(id, name) {
     const data = items.find((item) => item.product_id === id);
-    console.log("Data : ", data);
+
     dispatch(setProducts(data));
-    navigate(`/product/${id}`);
+    // navigate(`/product/${id}`);
+    const productData = new Array();
+    productData.push(data);
+    navigate(`/${name}/product-details/${id}`, {
+      state: { productDetails: productData },
+    });
   }
 
   return (
@@ -54,15 +57,15 @@ function ItemsByCategory() {
       </h1>
       <div className="flex flex-row gap-x-2 flex-wrap items-start m-4 p-2">
         {categories &&
-          categories.map((category) => {
+          categories.map((category, index) => {
             return (
               <div
-                key={category._id}
+                key={index}
                 onClick={() => itemsByCategory(category.id)}
                 className="bg-gray-200 border border-gray-400 rounded-full px-2 py-1 my-2 cursor-pointer"
               >
                 <p className="text-base rounded-full">
-                  {category.categori_name}
+                  {category.category_name}
                 </p>
               </div>
             );
@@ -70,11 +73,13 @@ function ItemsByCategory() {
       </div>
       <div className="flex flex-row gap-x-2 flex-wrap items-start m-4 p-2">
         {items &&
-          items.map((item) => {
+          items.map((item, index) => {
             return (
               <div
-                key={item.id}
-                onClick={() => handleCardClick(item.product_id)}
+                key={index}
+                onClick={() =>
+                  handleCardClick(item.product_id, item.product_name)
+                }
                 className="flex flex-col bg-gray-100 p-2 m-2 rounded-md cursor-pointer space-y-2"
               >
                 <img

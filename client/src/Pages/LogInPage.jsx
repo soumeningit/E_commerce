@@ -25,7 +25,6 @@ function LogInPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    console.log(formData);
     try {
       loginUser(formData, "POST", navigate, dispatch);
     } catch (error) {

@@ -1,5 +1,5 @@
 import toast from "react-hot-toast";
-import { PAYMENT_API_ENDPOINTS } from "../API/PaymentAPI";
+import { PAYMENT_API_ENDPOINTS } from "../APIS";
 import { apiConnector } from "./Connector/apiConnector";
 
 const {
@@ -23,8 +23,6 @@ function loadScript(src) {
 }
 
 export const initiatePayment = async (method, data, token, navigate, dispatch) => {
-    console.log("inside initiatePayment : ", data);
-    console.log("email : ", data.data.email);
     const toastId = toast.loading("Processing Payment...");
     try {
         const res = await loadScript('https://checkout.razorpay.com/v1/checkout.js')
@@ -40,9 +38,6 @@ export const initiatePayment = async (method, data, token, navigate, dispatch) =
             throw new Error(paymentResponse.data.message);
         }
 
-        console.log("paymentResponse : " + JSON.stringify(paymentResponse));
-        console.log("paymentResponse : " + paymentResponse);
-
         const options = {
             key: paymentResponse.data.keyId, // Enter the Key ID generated from the Dashboard
             amount: `${paymentResponse.data.data.amount}`, // Amount is in currency subunits. Default currency is INR. Hence, 50000 refers to 50000 paise
@@ -50,15 +45,23 @@ export const initiatePayment = async (method, data, token, navigate, dispatch) =
             name: "E-Commerace",
             description: "Happy Shopping",
             image: "https://example.com/your_logo",
-            order_id: `${paymentResponse.data.data.id}`, //This is a sample Order ID. Pass the `id` obtained in the response of Step 1
+            order_id: `${paymentResponse.data.data.id}`,
             prefill: {
-                email: data.data.email
+                name: paymentResponse.data.name,
+                email: paymentResponse.data.email,
             },
             handler: function (response) {
-                // send payment success mail
-                sendPaymentSuccess(response, paymentResponse.data.data.amount, token)
+                sendPaymentSuccess({ ...response, ...data }, paymentResponse.data.data.amount, token)
                 // verify payment
-                verifyPayment({ ...response }, token, navigate, dispatch)
+                verifyPayment({
+                    ...response,
+                    email: paymentResponse.data.email,
+                    name: paymentResponse.data.name,
+                    amount: paymentResponse.data.amount,
+                    order_id: paymentResponse.data.order_id,
+                    payment_id: paymentResponse.data.order_id,
+                    userId: data.userId,
+                }, token, navigate, dispatch)
             },
         }
         const paymentObject = new window.Razorpay(options);
@@ -66,8 +69,6 @@ export const initiatePayment = async (method, data, token, navigate, dispatch) =
 
         toast.dismiss(toastId);
         toast.success("Payment Initiated Successfully");
-        console.log("paymentObject : ", paymentObject);
-        console.log("paymentObject : ", JSON.stringify(paymentObject));
         return paymentResponse;
     } catch (error) {
         toast.dismiss(toastId);
@@ -89,7 +90,6 @@ export const sendPaymentSuccess = async (response, amount, token) => {
         if (!res.data.success) {
             throw new Error(res.data.message);
         }
-        console.log("Payment Success Mail Sent Successfully");
     } catch (error) {
         console.log("Error in sendPaymentSuccess: ", error);
     }
@@ -100,12 +100,9 @@ export const verifyPayment = async (data, token, navigate, dispatch) => {
         const res = await apiConnector('POST', VERIFY_PAYMENT_API, data, null, {
             Authorization: `Bearer ${token}`
         });
-        if (!res.data.success) {
-            throw new Error(res.data.message);
-        }
-        console.log("Payment Verified Successfully");
-        navigate('/payment-success');
-        console.log("Payment Verified Successfully");
+        navigate('/payment-success', {
+            state: res?.data
+        });
     } catch (error) {
         console.log("Error in verifyPayment: ", error);
     }

@@ -9,7 +9,6 @@ function ForgetPassword() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    console.log(email);
     try {
       forgotPasswordToken({ email }, "POST", navigate);
     } catch (error) {

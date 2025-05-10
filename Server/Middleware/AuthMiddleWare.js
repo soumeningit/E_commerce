@@ -9,7 +9,7 @@ exports.auth = async (req, res, next) => {
             || req.cookies['token']
             || (req.header("Authorization") ? req.header("Authorization").replace("Bearer ", "") : null);
 
-        console.log("token : " + token);
+        console.log("token inside auth middleware : " + token);
         if (!token) {
             return res.status(401).json({
                 success: false,
@@ -118,3 +118,25 @@ exports.isVendor = async (req, res, next) => {
         });
     }
 };
+
+exports.isUser = async (req, res, next) => {
+    try {
+        console.log("INSIDE VENDOR MIDDLEWARE");
+        const role = req.user.role;
+        console.log("role : " + role);
+        if (role != "user") {
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorized, this route is only for users"
+            });
+        };
+        next();
+    } catch (error) {
+        console.log("Error in isUser Middleware", error);
+        return res.status(401).json({
+            success: false,
+            message: "Unauthorized, this route is only for vendors"
+        });
+    }
+};
+

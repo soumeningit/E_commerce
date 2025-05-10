@@ -1,13 +1,33 @@
+const { createCart } = require('../Utils/CreateTable');
+const dbConnect = require('../Utils/DBConnect');
 const Connection = require('../Utils/DBConnect');
 
 
 exports.addItemsToCart = async (req, res) => {
+    let connection;
     try {
         console.log("INSIDE ADD ITEMS TO CART ....");
         console.log("REQ BODY : ", req.body);
 
-        const connection = await Connection();
-        const { productId, userId, quantity = 0 } = req.body;
+        const pool = await dbConnect();
+        connection = await pool.getConnection();
+
+        const isCartTableExsist = await createCart(connection);
+
+        if (!isCartTableExsist) {
+            return res.status(400).json({
+                success: false,
+                message: "Cart table creation faled"
+            });
+        }
+
+        const { productId, userId, quantity, product_price, total_price } = req.body;
+
+        console.log("productId : ", productId);
+        console.log("userId : ", userId);
+        console.log("quantity : ", quantity);
+        console.log("product_price : ", product_price);
+        console.log("total_price : ", total_price);
 
         if (!productId || !userId) {
             return res.status(400).json({
@@ -18,81 +38,50 @@ exports.addItemsToCart = async (req, res) => {
 
         // Check if user exists
         const [userDetails] = await connection.execute(
-            `SELECT * FROM users WHERE user_id = ?`, [userId]
+            `SELECT * FROM users WHERE id = ?`, [userId]
         );
         if (userDetails.length === 0) {
-            return res.status(400).json({ success: false, message: "User not found" });
+            return res.status(400).json({
+                success: false,
+                message: "User not found"
+            });
         }
         console.log("USER DETAILS:", JSON.stringify(userDetails));
 
         // Check if product exists
         const [productDetails] = await connection.execute(
-            `SELECT * FROM products WHERE product_id = ?`, [productId]
+            `SELECT * FROM product_details WHERE id = ?`, [productId]
         );
         if (productDetails.length === 0) {
-            return res.status(400).json({ success: false, message: "Product not found" });
+            return res.status(400).json({
+                success: false,
+                message: "Product not found"
+            });
         }
         console.log("PRODUCT DETAILS:", JSON.stringify(productDetails));
 
-        // Check if cart table exists (only needed once, not every request)
-        await connection.execute(`
-            CREATE TABLE IF NOT EXISTS cart (
-                id INT PRIMARY KEY AUTO_INCREMENT,
-                user_id INT NOT NULL,
-                product_id VARCHAR(255) NOT NULL,
-                quantity INT NOT NULL,
-                price BIGINT,
-                FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE,
-                FOREIGN KEY(product_id) REFERENCES products(product_id) ON DELETE CASCADE
-            );
-        `);
-        console.log("Table checked/created successfully");
+        const product_price_db = productDetails[0].product_mrp;
+        const_total_price = product_price * quantity;
+        console.log("product_price : ", product_price_db);
+        console.log("total_price :", total_price);
 
-        // Check if the same product exists in the cart
-        const [cartDetails] = await connection.execute(
-            `SELECT id, quantity FROM cart WHERE user_id = ? AND product_id = ?`,
-            [userId, productId]
-        );
+        const cartQuery = `
+            INSERT INTO cart (user_id, product_id, quantity, price_per_item, total_price)
+            VALUES (?, ?, ?, ?, ?);
+        `;
+
+        const cartDetails = await connection.execute(cartQuery, [
+            userId, productId, quantity, product_price_db, total_price
+        ]);
 
         console.log("CART DETAILS:", JSON.stringify(cartDetails));
 
-        if (cartDetails.length > 0) {
-            // If the product exists, update quantity
-            const existingCartId = cartDetails[0].id;
-            // const updatedQuantity = cartDetails[0].quantity;
-
-            // const [updatedCart] = await connection.execute(
-            //     `UPDATE cart SET quantity = ? WHERE id = ?`,
-            //     [updatedQuantity, existingCartId]
-            // );
-
-            // if (updatedCart.affectedRows === 0) {
-            //     return res.status(400).json({ success: false, message: "Cart not updated" });
-            // }
-            console.log("UPDATED CART DETAILS:", JSON.stringify(updatedCart));
-        } else {
-            // If product does not exist, insert new row
-            const [cart] = await connection.execute(
-                `INSERT INTO cart (user_id, product_id, quantity, price) VALUES (?, ?, ?, ?)`,
-                [userId, productId, quantity, productDetails[0].product_mrp]
-            );
-
-            if (cart.affectedRows === 0) {
-                return res.status(400).json({ success: false, message: "Product not added to cart" });
-            }
-            console.log("NEW CART ENTRY:", JSON.stringify(cart));
+        if (cartDetails.affectedRows === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Product not added to cart"
+            });
         }
-
-        // Update user cart status
-        const value = true;
-        const [updatedUserDetails] = await connection.execute(
-            `UPDATE users SET cart = ? WHERE user_id = ?`, [value, userId]
-        );
-
-        if (updatedUserDetails.affectedRows === 0) {
-            return res.status(400).json({ success: false, message: "Cart status not updated" });
-        }
-        console.log("UPDATED USER DETAILS:", JSON.stringify(updatedUserDetails));
 
         return res.status(200).json({
             success: true,
@@ -101,7 +90,10 @@ exports.addItemsToCart = async (req, res) => {
 
     } catch (error) {
         console.log("Error in addItemsToCart", error);
-        return res.status(500).json({ success: false, message: "Internal server error" });
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error"
+        });
     }
 };
 
@@ -112,30 +104,28 @@ exports.getCartItems = async (req, res) => {
         const connection = await Connection();
         const { userId } = req.query;
 
-        const [cartItems] = await connection.execute(
-            `SELECT * FROM cart WHERE user_id = ?`, [userId]
-        );
-        if (cartItems.length === 0) {
-            return res.status(404).json({
+        if (!userId) {
+            return res.status(400).json({
                 success: false,
-                message: "No items found in cart"
+                message: "User Id is required"
             });
         }
-        console.log("CART ITEMS:", JSON.stringify(cartItems));
 
-        let cartItemData = [];
-        for (let i = 0; i < cartItems.length; i++) {
-            const [productDetails] = await connection.execute(
-                `SELECT * FROM products WHERE product_id = ?`, [cartItems[i].product_id]
-            );
-            cartItemData[i] = { productDetails: productDetails[0] };
-        }
+        const query = `
+            SELECT
+                pd.*,
+                c.*
+            FROM product_details AS pd
+            JOIN cart AS c ON pd.id = c.product_id
+            WHERE c.user_id = 2;
+        `;
 
-        console.log("CART ITEM DATA:", JSON.stringify(cartItemData));
+        const [cartDetails] = await connection.execute(query, [userId]);
+        console.log("CART DETAILS:", JSON.stringify(cartDetails));
 
         return res.status(200).json({
             success: true,
-            data: cartItemData
+            data: cartDetails
         });
     } catch (error) {
         console.log("Error in getCartItems", error);
@@ -173,7 +163,7 @@ exports.deleteItemsFromCart = async (req, res) => {
         }
 
         const cartDetails = await connection.execute(
-            `DELETE FROM cart WHERE product_id = ?`, [productId]
+            `DELETE FROM cart WHERE id = ?`, [productId]
         );
 
         if (cartDetails.affectedRows === 0) {

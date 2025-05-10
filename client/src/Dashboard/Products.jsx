@@ -1,218 +1,229 @@
-import React, { use, useEffect, useState } from "react";
-import { useSelector } from "react-redux";
-import { getCategories } from "../Service/Operations/CategoryOpern";
+import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { createProduct } from "../Service/Operations/ProductOpern";
+import { useSelector } from "react-redux";
+import {
+  getProductByIdAPI,
+  deleteProductByIdAPI,
+} from "../Service/Operations/ProductOpern";
 
 function Products() {
-  const { token } = useSelector((state) => state.auth);
-  const { user } = useSelector((state) => state.auth);
+  const { user, token } = useSelector((state) => state.auth);
+  const [userProducts, setUserProducts] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [modalProduct, setModalProduct] = useState(null);
+  const productsPerPage = 5;
 
-  // console.log("User : ", user);
-  // console.log(typeof user);
-
-  // const userData = user && JSON.parse(user);
-
-  const [product, setProduct] = useState({
-    product_name: "",
-    quantity: "",
-    description: "",
-    product_cost_price: "",
-    product_mrp: "",
-    category_id: "",
-    provider_id: "",
-    image: "",
-  });
-
-  const [category, setCategory] = useState();
-
-  function handleChange(e) {
-    setProduct((prev) => {
-      return {
-        ...prev,
-        [e.target.name]: e.target.value,
-      };
-    });
-  }
-
-  function handleImageChange(e) {
-    console.log("Image : ", e.target.files[0]);
-    setProduct((prev) => {
-      return {
-        ...prev,
-        image: e.target.files[0],
-      };
-    });
-  }
-
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await getCategories("GET", token);
-        // console.log("Categories inside category : ", response);
-        setCategory(response?.data?.data);
-      } catch (error) {
-        console.log("Error in fetching categories : ", error);
-      }
-    };
-    fetchCategories();
-  }, []);
-
-  const handleProductAdd = async (e) => {
-    e.preventDefault();
-    console.log("Product Added");
-    console.log("Product : ", product);
-    if (product.quantity <= 0) {
-      toast.error("Quantity should be greater than 0");
-      return;
-    }
-    if (product.product_cost_price <= 0) {
-      toast.error("Cost Price should be greater than 0");
-      return;
-    }
-    if (product.product_mrp <= 0) {
-      toast.error("MRP should be greater than 0");
-      return;
-    }
+  const getProducts = async () => {
+    const toastId = toast.loading("Getting Product...");
     try {
-      const formData = new FormData();
-      formData.append("product_name", product.product_name);
-      formData.append("quantity", product.quantity);
-      formData.append("description", product.description);
-      formData.append("product_cost_price", product.product_cost_price);
-      formData.append("product_mrp", product.product_mrp);
-      formData.append("category_id", product.category_id);
-      formData.append("provider_id", product.provider_id);
-      formData.append("image", product.image); // Image file
-      formData.append("email", user?.email);
-
-      // console.log("Form Data : ", formData);
-      // console.log("Data : ", data);
-      await createProduct("POST", formData, token);
-    } catch (error) {
-      console.log("Error in adding product : ", error);
+      const response = await getProductByIdAPI(
+        "GET",
+        { userId: user.id },
+        token
+      );
+      if (response.status === 200) {
+        setUserProducts(response.data.data);
+      }
+    } catch (e) {
+      toast.error("Error in getting products");
+      console.log("GET PRODUCTS API ERROR : ", e);
+    } finally {
+      toast.dismiss(toastId);
     }
   };
 
-  // console.log("Categories : ", category);
+  const handleDelete = async (productId) => {
+    const toastId = toast.loading("Deleting Product...");
+    try {
+      const response = await deleteProductByIdAPI(
+        "DELETE",
+        { productId },
+        token
+      );
+      if (response.status === 200) {
+        setUserProducts(
+          userProducts.filter((product) => product.product_id !== productId)
+        );
+        toast.success("Product deleted successfully");
+      }
+    } catch (e) {
+      toast.error("Error deleting product");
+      console.log("DELETE PRODUCT API ERROR : ", e);
+    } finally {
+      toast.dismiss(toastId);
+    }
+  };
+
+  const openModal = (product) => {
+    setModalProduct(product);
+  };
+
+  const closeModal = () => {
+    setModalProduct(null);
+  };
+
+  useEffect(() => {
+    getProducts();
+  }, []);
+
+  // Pagination logic
+  const indexOfLastProduct = currentPage * productsPerPage;
+  const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
+  const currentProducts = userProducts.slice(
+    indexOfFirstProduct,
+    indexOfLastProduct
+  );
+  const totalPages = Math.ceil(userProducts.length / productsPerPage);
+
+  // Calculate total sales
+  const totalSales = userProducts.reduce((sum, product) => {
+    const soldQuantity = product.initial_quantity - product.current_stk;
+    return sum + soldQuantity * parseFloat(product.product_price);
+  }, 0);
 
   return (
-    <div className="flex flex-col items-center justify-center p-4 m-4 rounded-lg">
-      <h1 className="text-xl font-semibold text-white italic font-serif">
-        Products Details
-      </h1>
-      {/* User Products */}
-      <div className="w-3/5 border-1 border-gray-100 m-2 p-2 rounded-md">
-        <h2 className="text-lg font-semibold text-white italic font-serif">
-          Product 1
-        </h2>
-        <p className="text-sm text-white">
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam
-          accumsan, purus et ultricies luctus, libero turpis luctus elit, nec
-          tincidunt justo libero sit amet turpis.
-        </p>
-      </div>
-      {/* Add Product */}
-      <div className="w-3/5 border-1 border-gray-100 m-2 p-2 rounded-md">
-        <h2 className="text-lg font-semibold text-white italic font-serif">
-          Add Product
-        </h2>
-        <form onSubmit={handleProductAdd} className="w-[85%] p-4 m-4">
-          <div className="flex flex-col m-2 space-y-2 text-gray-200">
-            <label htmlFor="product_name">
-              Product Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="product_name"
-              value={product.product_name}
-              onChange={handleChange}
-              required
-              className="p-2 rounded-md outline-none bg-gray-400 text-gray-950 font-semibold"
-            />
-          </div>
-          <div className="flex flex-col m-2 space-y-2 text-gray-200">
-            <label htmlFor="quantity">
-              Quantity <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              name="quantity"
-              value={product.quantity}
-              onChange={handleChange}
-              required
-              className="p-2 rounded-md outline-none bg-gray-400 text-gray-950 font-semibold"
-            />
-          </div>
-          <div className="flex flex-col m-2 space-y-2 text-gray-200">
-            <label htmlFor="description">Description</label>
-            <textarea
-              name="description"
-              value={product.description}
-              onChange={handleChange}
-              className="p-2 rounded-md outline-none bg-gray-400 text-gray-950 font-semibold"
-            />
-          </div>
-          <div className="flex flex-col m-2 space-y-2 text-gray-200">
-            <label htmlFor="product_image">Product Image</label>
-            <input
-              type="file"
-              name="product_image"
-              // value={product.product_image}
-              onChange={handleImageChange}
-              className="p-2 rounded-md outline-none bg-gray-400 text-gray-950 font-semibold"
-            />
-          </div>
-          <div className="flex flex-col m-2 space-y-2 text-gray-200">
-            <label htmlFor="product_cost_price">
-              Cost Price <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              name="product_cost_price"
-              value={product.product_cost_price}
-              onChange={handleChange}
-              required
-              className="p-2 rounded-md outline-none bg-gray-400 text-gray-950 font-semibold"
-            />
-          </div>
-          <div className="flex flex-col m-2 space-y-2 text-gray-200">
-            <label htmlFor="product_mrp">
-              MRP <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              name="product_mrp"
-              value={product.product_mrp}
-              onChange={handleChange}
-              required
-              className="p-2 rounded-md outline-none bg-gray-400 text-gray-950 font-semibold"
-            />
-          </div>
-          <div className="flex flex-col m-2 space-y-2 text-gray-200">
-            <label htmlFor="category_id">Category</label>
-            <select
-              name="category_id"
-              value={product.category_id}
-              onChange={handleChange}
-              className="p-2 rounded-md outline-none bg-gray-400 text-gray-950 font-semibold"
+    <div className="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-3xl font-bold text-gray-800 mb-6">Your Products</h1>
+        <div className="bg-white shadow-md rounded-lg p-6 mb-6">
+          <h2 className="text-xl font-semibold text-gray-700">
+            Total Sales:{" "}
+            <span className="text-green-600">₹{totalSales.toFixed(2)}</span>
+          </h2>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {currentProducts.map((product) => (
+            <div
+              key={product.product_id}
+              className="bg-white shadow-md rounded-lg overflow-hidden transition-transform transform hover:scale-105"
             >
-              <option value="">Select Category</option>
-              {category &&
-                category.map((data, index) => (
-                  <option key={index} value={data.id} className="text-gray-950">
-                    {data.categori_name}
-                  </option>
-                ))}
-            </select>
+              <img
+                src={product.product_image.replace(/\[|\]/g, "")}
+                alt={product.product_name}
+                className="w-full h-32 object-cover"
+              />
+              <div className="p-3">
+                <h3 className="text-md font-semibold text-gray-800 truncate">
+                  {product.product_name}
+                </h3>
+                <p className="text-gray-600 text-sm">
+                  Price: ₹{product.product_price}
+                </p>
+                <p className="text-gray-600 text-sm">
+                  Stock: {product.current_stk}
+                </p>
+                <div className="mt-3 flex space-x-2">
+                  <button
+                    onClick={() => handleDelete(product.product_id)}
+                    className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition cursor-pointer text-sm"
+                  >
+                    Delete
+                  </button>
+                  <button
+                    onClick={() => openModal(product)}
+                    className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition cursor-pointer text-sm"
+                  >
+                    Show More
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {userProducts.length === 0 && (
+          <p className="text-center text-gray-600 mt-6">No products found.</p>
+        )}
+
+        {totalPages > 1 && (
+          <div className="flex justify-center mt-8 space-x-2">
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded disabled:opacity-50 hover:bg-gray-300 cursor-pointer"
+            >
+              Previous
+            </button>
+            <span className="px-4 py-2 text-gray-700">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+              }
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded disabled:opacity-50 hover:bg-gray-300 cursor-pointer"
+            >
+              Next
+            </button>
           </div>
-          <button
-            type="submit"
-            className="p-2 bg-blue-500 text-white rounded-md font-semibold cursor-pointer ml-2"
-          >
-            Add Product
-          </button>
-        </form>
+        )}
+
+        {modalProduct && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-lg w-full mx-4">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold text-gray-800">
+                  {modalProduct.product_name}
+                </h2>
+                <button
+                  onClick={closeModal}
+                  className="text-gray-500 hover:text-gray-700 cursor-pointer"
+                >
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+              <img
+                src={modalProduct.product_image.replace(/\[|\]/g, "")}
+                alt={modalProduct.product_name}
+                className="w-full h-40 object-cover rounded mb-4"
+              />
+              <p className="text-gray-700">
+                <span className="font-semibold">Medium Description:</span>{" "}
+                {modalProduct.medium_desc}
+              </p>
+              <p className="text-gray-700">
+                <span className="font-semibold">Long Description:</span>{" "}
+                {modalProduct.long_desc}
+              </p>
+              <p className="text-gray-700">
+                <span className="font-semibold">Units Sold:</span>{" "}
+                {modalProduct.initial_quantity - modalProduct.current_stk}
+              </p>
+              <p className="text-gray-700">
+                <span className="font-semibold">Earnings from Product:</span> ₹
+                {(
+                  (modalProduct.initial_quantity - modalProduct.current_stk) *
+                  parseFloat(modalProduct.product_price)
+                ).toFixed(2)}
+              </p>
+              <p className="text-gray-700">
+                <span className="font-semibold">Reviews:</span> No reviews
+                available
+              </p>
+              <button
+                onClick={closeModal}
+                className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

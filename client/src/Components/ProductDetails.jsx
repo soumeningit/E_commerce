@@ -19,17 +19,11 @@ function ProductDetails() {
   const [showAlertModal, setShowAlertModal] = useState(false);
   const [quantity, setQuantity] = useState(1);
 
-  console.log("params : ", params);
-  console.log("product : ", product);
-  console.log("user : ", JSON.stringify(user));
-  console.log("userId" + user.id);
-
   async function handleAddToCart() {
     if (!token) {
       setShowAlertModal(true);
       return;
     }
-    console.log("Add to cart clicked");
     const data = {
       userId: user.id,
       productId: params?.id,
@@ -37,7 +31,6 @@ function ProductDetails() {
     const toastId = toast.loading("Adding to cart...");
     try {
       const response = await addItemsToCart("POST", data, token);
-      console.log("Add to Cart Response : ", response);
       if (!response.data.success) {
         throw new Error(response.data.message);
       }
@@ -59,12 +52,12 @@ function ProductDetails() {
       </h1>
       <div className="grid grid-cols-2 gap-4 my-10">
         <div className="">
-          <img src={product.product_image} alt="product" loading="lazy" />
+          <img src={product?.product_image} alt="product" loading="lazy" />
         </div>
         <div className="flex flex-col gap-4">
-          <h1 className="text-xl font-bold">{product.product_name}</h1>
-          <p>{product.description}</p>
-          <p>Price: ₹ {product.product_mrp}</p>
+          <h1 className="text-xl font-bold">{product?.product_name}</h1>
+          <p>{product?.description}</p>
+          <p>Price: ₹ {product?.product_mrp}</p>
           {/* <div className="flex gap-4">
             <div
               onClick={() => {

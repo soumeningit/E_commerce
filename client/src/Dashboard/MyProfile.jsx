@@ -1,124 +1,93 @@
-import React, { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
-import { getProductDetails } from "../Service/Operations/UserOpern";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { FiEdit2 } from "react-icons/fi";
+import { getUserDetailsAPI } from "../Service/Operations/ProfileAPI";
+// import SellProducts from "./SellProducts";
+// import RentProducts from "./RentProducts";
 
 function MyProfile() {
-  const { token } = useSelector((state) => state.auth);
-  const { user } = useSelector((state) => state.auth);
+  const { user, token } = useSelector((state) => state.auth);
+  const [userDetails, setUserDetails] = useState({});
 
   const navigate = useNavigate();
 
-  const [products, setProducts] = useState([]);
-  const [visibleCount, setVisibleCount] = useState(3);
-
-  if (!user) {
-    navigate("/login");
-    return null;
-  }
-  // let userData = JSON.parse(user);
-  // console.log("USER DATA : ", userData);
-
-  // console.log("USER : ", user + typeof user);
-
-  if (!token) {
-    navigate("/login");
-    return null;
-  }
+  const getUserData = async () => {
+    try {
+      const response = await getUserDetailsAPI(user.id, token);
+      if (response.status === 200) {
+        setUserDetails(response?.data?.data);
+      }
+    } catch (error) {
+      console.error("Error fetching user data: ", error);
+    }
+  };
 
   useEffect(() => {
-    async function fetchProducts() {
-      try {
-        const response = await getProductDetails("GET", { id: user.id }, token);
-        console.log("PRODUCT DETAILS : ", response);
-        if (response.data.success) {
-          setProducts(response.data.data);
-        }
-      } catch (e) {
-        console.log("PRODUCT DETAILS ERROR : ", e);
-      }
-    }
-    fetchProducts();
+    getUserData();
   }, []);
 
-  const handleShowMore = () => {
-    setVisibleCount((prevCount) => prevCount + 3); // Show 3 more products each time
-  };
-
-  const handleProductClick = (id) => {
-    console.log("Product Clicked : ");
-    console.log("Product ID : ", id);
-  };
-
   return (
-    // <div className="bg-gray-900 text-white flex flex-col items-center py-10">
-    //   <h1 className="text-3xl font-semibold mb-6">Your Listed Products</h1>
-    //   <div className="w-4/5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-    //     {products.length > 0 ? (
-    //       products.map((product) => (
-    //         <div
-    //           key={product.product_id}
-    //           onClick={() => handleProductClick(product.product_id)}
-    //           className="bg-gray-800 p-4 rounded-lg shadow-lg flex flex-col items-center cursor-pointer"
-    //         >
-    //           <img
-    //             src={product.product_image}
-    //             alt="product"
-    //             className="w-full h-48 object-cover rounded-md"
-    //           />
-    //           <h3 className="text-xl font-bold mt-4">{product.product_name}</h3>
-    //           <p className="text-gray-300 text-sm mt-2">
-    //             {product.product_description}
-    //           </p>
-    //           <p className="text-green-400 font-semibold mt-2">
-    //             ₹{product.product_mrp}
-    //           </p>
-    //         </div>
-    //       ))
-    //     ) : (
-    //       <p className="text-lg text-gray-400">No products listed yet.</p>
-    //     )}
-    //   </div>
-    // </div>
+    <div className="w-full bg-gray-50 py-8 px-4 overflow-hidden">
+      <div className="mx-auto bg-white shadow-lg rounded-2xl p-6">
+        <div className="flex justify-between items-center border-b pb-4 mb-4">
+          <h2 className="text-2xl font-semibold text-gray-800">User Profile</h2>
+          <button
+            onClick={() => navigate("/dashboard/setting")}
+            className="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition duration-200 cursor-pointer"
+          >
+            <FiEdit2 size={18} />
+            <span>Edit Profile</span>
+          </button>
+        </div>
 
-    <div className="bg-gray-900 text-white flex flex-col items-center py-10">
-      <h1 className="text-3xl font-semibold mb-6">Your Listed Products</h1>
-      <div className="w-4/5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {products && products.length > 0 ? (
-          products.slice(0, visibleCount).map((product) => (
-            <div
-              key={product.product_id}
-              onClick={() => handleProductClick(product.product_id)}
-              className="bg-gray-800 p-4 rounded-lg shadow-lg flex flex-col items-center cursor-pointer"
-            >
-              <img
-                src={product.product_image}
-                alt="product"
-                className="w-full h-48 object-cover rounded-md"
-              />
-              <h3 className="text-xl font-bold mt-4">{product.product_name}</h3>
-              <p className="text-gray-300 text-sm mt-2">
-                {product.product_description}
-              </p>
-              <p className="text-green-400 font-semibold mt-2">
-                Price ₹{product.product_mrp}
-              </p>
-            </div>
-          ))
-        ) : (
-          <p className="text-lg text-gray-400">No products listed yet.</p>
-        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700 text-sm">
+          <div>
+            <p className="font-medium">First Name:</p>
+            <p>{userDetails.firstName}</p>
+          </div>
+          <div>
+            <p className="font-medium">Last Name:</p>
+            <p>{userDetails.lastName}</p>
+          </div>
+          <div>
+            <p className="font-medium">Email:</p>
+            <p>{userDetails.email}</p>
+          </div>
+          <div>
+            <p className="font-medium">Contact No:</p>
+            <p>{userDetails.mobileNo}</p>
+          </div>
+          <div>
+            <p className="font-medium">Address:</p>
+            <p>{userDetails.address}</p>
+          </div>
+          <div>
+            <p className="font-medium">State:</p>
+            <p>{userDetails.state}</p>
+          </div>
+          <div>
+            <p className="font-medium">Country:</p>
+            <p>{userDetails.country}</p>
+          </div>
+          <div>
+            <p className="font-medium">Pincode:</p>
+            <p>{userDetails.pin_code}</p>
+          </div>
+          <div className="md:col-span-2">
+            <p className="font-medium">Joined On:</p>
+            <p>{new Date(userDetails.created_at).toLocaleDateString()}</p>
+          </div>
+        </div>
       </div>
 
-      {/* Show "See More" button only if there are more products */}
-      {visibleCount < products.length && (
-        <button
-          onClick={handleShowMore}
-          className="mt-6 px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition"
-        >
-          See More
-        </button>
-      )}
+      {/* <div className="max-w-4xl mx-auto mt-8">
+        <h3 className="text-xl font-semibold text-gray-800 mb-4">
+          Your Products
+        </h3>
+        <SellProducts />
+        <RentProducts />
+      </div> */}
     </div>
   );
 }

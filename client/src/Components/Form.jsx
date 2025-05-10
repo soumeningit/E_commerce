@@ -18,8 +18,6 @@ function Form() {
     notifications: "",
   });
 
-  // console.log(fromData);
-
   function changeHandeler(event) {
     const { name, type, checked, value } = event.target;
     setFromData((prevDta) => {
@@ -33,7 +31,6 @@ function Form() {
   function btnHandeler(event) {
     event.preventDefault();
     window.localStorage.setItem("fromData", JSON.stringify(fromData));
-    console.log(fromData);
   }
 
   return (
