@@ -2,6 +2,8 @@ const BASE_URL = process.env.NODE_ENV === "production" ?
     "https://e-com-site-omega.vercel.app/api" :
     "http://localhost:4000/api";
 
+console.log(`API URL: ${BASE_URL}`)
+
 
 export const AUTH_API_ENDPOINTS = {
     SENDOTP_API: BASE_URL + "/auth/sendOTP",
