@@ -2,7 +2,6 @@ const express = require('express');
 const app = express();
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
-const dbConnect = require('./Utils/DBConnect');
 const userRoute = require('./Routes/UserRoute');
 const authRoute = require('./Routes/AuthRoute');
 const categoryRoute = require('./Routes/CategoryRoute');
@@ -15,11 +14,12 @@ const paymentRoute = require('./Routes/PaymentRoute');
 const profileRoute = require('./Routes/ProfileRoute');
 const orderRoute = require('./Routes/OrderRoute');
 
-const PORT = 4000;
+const PORT = process.env.PORT || 5000;
 
 const allowedOrigins = [
     'http://localhost:5173',
     'http://localhost:4000',
+    'https://e-com-site-omega.vercel.app',
 ];
 
 app.use(cors({
