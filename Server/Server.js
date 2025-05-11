@@ -20,6 +20,7 @@ const allowedOrigins = [
     'http://localhost:5173',
     'http://localhost:4000',
     'https://e-com-site-omega.vercel.app',
+    'https://ecombackend-0ku8.onrender.com'
 ];
 
 app.use(cors({
@@ -57,5 +58,5 @@ app.get('/', (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`Server is running on port http://localhost:${PORT}`);
+    console.log(`Server is running on port ${PORT}`);
 });

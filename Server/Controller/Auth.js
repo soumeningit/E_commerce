@@ -16,7 +16,6 @@ exports.sendOTP = async (req, res) => {
                 message: "Database connection failed"
             });
         }
-        console.log("Database Connected : " + connection);
         let isOTPTableExsist = await createOTP(connection);
         console.log("Is OTP Table Exsist : " + isOTPTableExsist);
         if (!isOTPTableExsist) {
@@ -25,6 +24,8 @@ exports.sendOTP = async (req, res) => {
                 message: "OTP table creation failed"
             });
         }
+        console.log("Is OTP Table Exsist : " + isOTPTableExsist);
+
         const { email, firstName, lastName } = req.body;
         if (!email || !firstName || !lastName) {
             return res.status(400).json({
@@ -41,9 +42,9 @@ exports.sendOTP = async (req, res) => {
         console.log("OTP : " + otp);
 
         const [otpData] = await connection.execute(
-            `INSERT INTO OTP(email, otp)
-            VALUES(?, ?)`,
-            [email, otp]
+            `INSERT INTO otp(email, otp, createdAt, expiresAt)
+            VALUES(?, ?, ?, ?)`,
+            [email, otp, new Date(), new Date(Date.now() + 10 * 60 * 1000)]
         );
 
         if (!otpData.affectedRows) {
@@ -143,7 +144,9 @@ exports.signUp = async (req, res) => {
             [email]
         );
 
-        if (user.length) {
+        console.log("User Data : " + JSON.stringify(user));
+
+        if (user.length > 0) {
             return res.status(404).json({
 
                 success: false,
@@ -155,9 +158,11 @@ exports.signUp = async (req, res) => {
 
         // Check OTP which user send and OTP which is saved in Database recently
         const [otpData] = await connection.execute(
-            "SELECT * FROM otp WHERE email = ? ORDER BY ID DESC LIMIT 1",
+            "SELECT * FROM otp WHERE email = ? ORDER BY id DESC LIMIT 1",
             [email]
         );
+
+        console.log("OTP Data : " + JSON.stringify(otpData));
 
         // Check OTP time is not expired
         if (otpData[0].expiresAt < new Date()) {
@@ -188,8 +193,8 @@ exports.signUp = async (req, res) => {
         const is_verified = true;
 
         const [userData] = await connection.execute(
-            "INSERT INTO users (firstName, middleName, lastName, email, password, mobileNo, is_verified) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            [firstName, middleName, lastName, email, hashPassword, mobileNumber, is_verified]
+            "INSERT INTO users (firstName, middleName, lastName, email, password, mobileNo, is_verified, country_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            [firstName, middleName, lastName, email, hashPassword, mobileNumber, is_verified, countryCode]
         );
 
         if (!userData.affectedRows) {

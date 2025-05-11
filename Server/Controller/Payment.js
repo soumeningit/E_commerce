@@ -85,7 +85,7 @@ exports.capturePayment = async (req, res) => {
         let amountFromAPI = 0;
 
         const [orderInitiateData] = await connection.execute(
-            `INSERT INTO Orders (is_order_initiated, order_initiation_time, user_id) VALUES (?, ?, ?)`,
+            `INSERT INTO orders (is_order_initiated, order_initiation_time, user_id) VALUES (?, ?, ?)`,
             [1, new Date(), userId]
         );
 
@@ -159,7 +159,7 @@ exports.capturePayment = async (req, res) => {
         console.log("order : ", order);
 
         const [updateOrder] = await connection.execute(
-            `UPDATE Orders SET order_id = ?, total_price = ? WHERE id = ?`,
+            `UPDATE orders SET order_id = ?, total_price = ? WHERE id = ?`,
             [order.id, totalAmount, orderIdFromDB]
         );
 

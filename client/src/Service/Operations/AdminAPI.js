@@ -94,9 +94,6 @@ export const verifyUserAPI = async (token, method, data) => {
         const response = await apiConnector(method, VERIFY_USER_API, data, null, {
             Authorization: `Bearer ${token}`
         })
-        if (!response.data.success) {
-            throw new Error(response.data.message)
-        }
         return response;
     } catch (e) {
         toast.error(e.response.data.message);

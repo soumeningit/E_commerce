@@ -132,7 +132,8 @@ exports.deleteCategory = async (req, res) => {
 exports.findItemsByCategory = async (req, res) => {
     try {
         console.log("INSIDE FIND ITEMS BY CATEGORY ....");
-        const connection = await Connection();
+        const pool = await Connection();
+        const connection = await pool.getConnection();
         const { id } = req.query;
         console.log("req.query : ", req.query);
         console.log("Category Id : ", id);
@@ -144,33 +145,37 @@ exports.findItemsByCategory = async (req, res) => {
         }
 
         const query = `
-                    SELECT
-                        p.id AS product_id,
-                        p.product_name,
-                        p.product_price,
-                        p.product_mrp,
-                        p.initial_quantity,
-                        p.current_stk,
-                        p.category_id,
-                        p.image AS product_image,
-                        p.created_at AS creation_time,
-                        c.category_name,
-                        c.categori_desc,
-                        c.parent_category,
-                        pd.id AS product_description_id,
-                        pd.short_desc,
-                        pd.medium_desc,
-                        pd.long_desc,
-                        u.id AS seller_id,
-                        u.firstName,
-                        u.lastName,
-                        u.email
-                    FROM product_details AS p
-                    JOIN categories AS C ON p.category_id = c.id
-                    JOIN product_description AS pd ON pd.product_id = p.id
-                    JOIN users AS u ON u.id = p.created_by
-                    WHERE p.category_id = ?;
-                `;
+                        SELECT
+                            p.id AS product_id,
+                            p.product_name,
+                            p.product_price,
+                            p.product_mrp,
+                            p.initial_quantity,
+                            p.current_stk,
+                            p.category_id,
+                            p.image AS product_image,
+                            p.created_at AS creation_time,
+                            c.category_name,
+                            c.categori_desc,
+                            c.parent_category,
+                            pd.id AS product_description_id,
+                            pd.short_desc,
+                            pd.medium_desc,
+                            pd.long_desc,
+                            u.id AS seller_id,
+                            u.firstName,
+                            u.lastName,
+                            u.email
+                        FROM 
+                            product_details AS p
+                        JOIN 
+                            categories AS c ON p.category_id = c.id
+                        JOIN 
+                            product_description AS pd ON pd.product_id = p.id
+                        JOIN 
+                            users AS u ON u.id = p.created_by
+                        WHERE 
+                            p.category_id = ?;`;
 
         const [items] = await connection.execute(query, [id]);
         if (!items.length) {

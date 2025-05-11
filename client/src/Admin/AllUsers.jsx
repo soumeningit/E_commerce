@@ -67,7 +67,6 @@ function AllUsers() {
     } catch (error) {
       console.error("Error blocking user:", error);
       setError(error?.response?.data?.message || "Failed to block user");
-      toast.error("Error blocking user", { id: toastId });
     } finally {
       toast.dismiss(toastId);
     }
@@ -88,7 +87,6 @@ function AllUsers() {
     } catch (error) {
       console.error("Error unblocking user:", error);
       setError(error?.response?.data?.message || "Failed to unblock user");
-      toast.error("Error unblocking user", { id: toastId });
     } finally {
       toast.dismiss(toastId);
     }

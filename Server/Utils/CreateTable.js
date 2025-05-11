@@ -8,7 +8,7 @@ exports.createOTP = async (connection) => {
                 email VARCHAR(100) NOT NULL,
                 otp VARCHAR(10) NOT NULL,
                 createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                expiresAt TIMESTAMP DEFAULT (CURRENT_TIMESTAMP + INTERVAL 10 MINUTE)
+                expiresAt TIMESTAMP
             );`;
 
             await connection.execute(query);
@@ -38,6 +38,7 @@ exports.createUsers = async (connection) => {
                                 password VARCHAR(255) NOT NULL,
                                 image VARCHAR(500) DEFAULT NULL,
                                 mobileNo VARCHAR(14) NOT NULL,
+                                country_code VARCHAR(10) DEFAULT NULL,
                                 role ENUM('user', 'staff', 'employee', 'admin', 'vendor') DEFAULT 'user',
                                 is_verified BOOLEAN DEFAULT FALSE,
                                 is_authorised BOOLEAN DEFAULT FALSE,
@@ -104,6 +105,7 @@ exports.createAdditionalDetails = async (connection) => {
                                 state VARCHAR(50),
                                 pin_code VARCHAR(10) NOT NULL,
                                 country VARCHAR(50) NOT NULL,
+                                country_code VARCHAR(10) DEFAULT NULL,
                                 gender ENUM('male', 'female', 'other'),
                                 dob DATE,
                                 user_id INT NOT NULL UNIQUE,

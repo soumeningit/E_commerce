@@ -272,7 +272,7 @@ function SellProduct() {
 
           <div>
             <label className="block font-medium mb-1">
-              Product Desciption:
+              Product Short Desciption:
             </label>
             <input
               id="shortDescription"
@@ -286,7 +286,7 @@ function SellProduct() {
 
           <div>
             <label className="block font-medium mb-1">
-              Product Desciption:
+              Product Medium Desciption:
             </label>
             <input
               id="mediumDescription"
