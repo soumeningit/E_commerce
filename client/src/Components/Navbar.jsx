@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import logo from "../image/logo.png";
+import logo from "../image/logo_new.png";
 import { CiShoppingBasket } from "react-icons/ci";
 import { FaSearch } from "react-icons/fa";
 import { Link, NavLink } from "react-router-dom";

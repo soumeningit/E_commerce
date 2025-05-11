@@ -60,7 +60,6 @@ export async function deleteItemsFromCart(method, data, token) {
     } catch (e) {
         toast.dismiss(toastId);
         throw e;
-        throw e;
     } finally {
         toast.dismiss(toastId);
     }

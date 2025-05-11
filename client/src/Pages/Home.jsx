@@ -16,7 +16,7 @@ function Home() {
       <SellingItem />
       <ItemsByCategory />
       <VegitableItem />
-      <Trending />
+      {/* <Trending /> */}
       <Review />
       <Footer />
     </div>

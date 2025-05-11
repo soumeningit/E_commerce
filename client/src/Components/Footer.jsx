@@ -2,7 +2,7 @@ import { ChevronRight } from "lucide-react";
 import React from "react";
 import { MdOutlineKeyboardControlKey } from "react-icons/md";
 import { NavLink } from "react-router-dom";
-import logo from "../image/logo.png";
+import logo from "../image/logo_new.png";
 
 function Footer() {
   function scrollToTop() {

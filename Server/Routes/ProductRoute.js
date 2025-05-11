@@ -6,7 +6,7 @@ const { auth, isVendor } = require('../Middleware/AuthMiddleWare');
 const { createProduct, getProducts, searchProduct, getProductById, getParticularProductDetails, getReviews } = require('../Controller/Product');
 
 router.post('/create-product', auth, isVendor, createProduct);
-router.get('/get-product', getProducts);
+router.get('/get-all-product', getProducts);
 router.get('/search-item', searchProduct);
 router.get('/get-product-by-id', auth, isVendor, getProductById);
 router.get('/get-product-details-by-id', getParticularProductDetails);

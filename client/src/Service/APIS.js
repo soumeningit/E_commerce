@@ -38,7 +38,7 @@ export const PAYMENT_API_ENDPOINTS = {
 }
 
 export const PRODUCT_API_ENDPOINTS = {
-    GET_PRODUCTS_API: BASE_URL + "/product/get-product",
+    GET_PRODUCTS_API: BASE_URL + "/product/get-all-product",
     CREATE_PRODUCT_API: BASE_URL + "/product/create-product",
     SEARCH_PRODUCT_API: BASE_URL + "/product/search-item",
     UPDATE_PRODUCT_API: BASE_URL + "/product",

@@ -180,14 +180,43 @@ exports.createProduct = async (req, res) => {
 
 exports.getProducts = async (req, res) => {
     try {
-        const connection = await Connection();
-        const [products] = await connection.execute(`SELECT * FROM Products`);
+        console.log("INSIDE GET PRODUCT ....");
+        const pool = await dbConnect();
+        const connection = await pool.getConnection();
+
+        const query = `
+                    SELECT
+                        p.id AS product_id,
+                        p.product_name,
+                        p.product_mrp,
+                        p.created_by,
+                        p.category_id,
+                        p.image AS product_image,
+                        pd.id AS product_description_id,
+                        pd.short_desc,
+                        pd.medium_desc,
+                        pd.long_desc,
+                        u.firstName,
+                        u.lastName,
+                        u.email,
+                        u.image AS user_image,
+                        c.category_name,
+                        categori_desc
+                    FROM product_details AS p
+                    JOIN product_description AS pd ON p.id = pd.product_id
+                    JOIN categories AS c ON c.id = p.category_id
+                    JOIN users AS u ON p.created_by = u.id;`;
+
+        const [products] = await connection.execute(query);
         if (products.length === 0) {
             return res.status(404).json({
                 success: false,
                 message: "Products not found"
-            });
+            })
         }
+
+        console.log("Products : " + JSON.stringify(products));
+
         return res.status(200).json({
             success: true,
             message: "Products found successfully",

@@ -1,14 +1,15 @@
-import React, { useState } from "react";
-import SellingCard from "../Components/SellingCard";
+import React, { useEffect, useState } from "react";
 import { data } from "../Utils/data";
-import ShowCard from "../Components/ShowCard";
 import Footer from "../Components/Footer";
+import { getProducts } from "../Service/Operations/ProductOpern";
+import ShowProductCard from "../Components/ShowProductCard";
 
-function Everything({ isLoggedIn }) {
+function Everything() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [item, setItem] = useState(null);
+  const [item, setItem] = useState([]);
   const [sliderValue, setSliderValue] = useState(10);
   const [price, setPrice] = useState([]);
+  const [quantity, setQuantity] = useState(0);
 
   console.log("price : " + price);
 
@@ -38,53 +39,49 @@ function Everything({ isLoggedIn }) {
     }
   }
 
+  function handleAddQuantity() {
+    setQuantity((prevQuantity) => prevQuantity + 1);
+  }
+
+  function handleReduceQuantity() {
+    if (quantity > 0) {
+      setQuantity((prevQuantity) => prevQuantity - 1);
+    }
+  }
+
+  const getAllProducts = async () => {
+    try {
+      const response = await getProducts();
+      console.log(response);
+      console.log("response : " + JSON.stringify(response));
+      if (response.status === 200) {
+        setItem(response.data.data);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    getAllProducts();
+  }, []);
+
   return (
     <div className="w-full flex flex-col">
-      {/* search by scroolbar */}
-      <div className="flex flex-row ">
-        <div className="h-24 w-44 flex flex-col">
-          <input
-            type="range"
-            min={10}
-            value={sliderValue}
-            onChange={sliderHandeler}
-          />
-          <div className="flex flex-col">
-            <p>Minimum Price : {10}</p>
-            <p>Maximum Price : {sliderValue}</p>
-          </div>
-        </div>
-        <div className="flex flex-row flex-wrap">
-          {price.map((item) => {
-            return <SellingCard item={item} isLoggedIn={isLoggedIn} />;
+      <div className="mx-auto p-4 bg-[rgba(239,237,235,0.78)] rounded-md shadow-md grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {item.length > 0 &&
+          item.map((item, index) => {
+            return (
+              <ShowProductCard
+                key={index}
+                image={item.product_image}
+                productName={item.product_name}
+                shortDescription={item.short_desc}
+                productPrice={item.product_mrp}
+                productId={item.product_id}
+              />
+            );
           })}
-        </div>
-      </div>
-
-      {/* Search by name */}
-      <div className="flex mx-auto gap-x-2 ">
-        <input
-          type="text"
-          id="substringInput" // Added id here
-          className="border border-slate-400 outline-none focus-none rounded-lg w-96"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        <button
-          className="border border-gray-400 px-2 py-1 text-md rounded-md"
-          onClick={checkMatch}
-        >
-          Search
-        </button>
-      </div>
-
-      <div className="mx-auto p-4 bg-[rgba(239,237,235,0.78)] rounded-md shadow-md">
-        {item && <ShowCard item={item} isLoggedIn={isLoggedIn} />}
-      </div>
-      <div className="flex flex-row flex-wrap w-[88%] mt-8 mx-auto">
-        {data.map((item) => (
-          <SellingCard key={item.id} item={item} isLoggedIn={isLoggedIn} />
-        ))}
       </div>
 
       <Footer />
