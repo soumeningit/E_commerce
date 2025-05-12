@@ -1,14 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { findItemsByCategoryName } from "../Service/Operations/CategoryOpern";
 import ShowProductCard from "../Components/ShowProductCard";
-
-function Groceries() {
+function Electronic() {
   const [data, setData] = useState([]);
 
   async function getData() {
     try {
-      const response = await findItemsByCategoryName("GET", "Groceries");
+      const response = await findItemsByCategoryName("GET", "Electronics");
       console.log("Response: ", response);
       console.log("Response: ", JSON.stringify(response));
       if (response.status === 200) {
@@ -43,4 +43,4 @@ function Groceries() {
   );
 }
 
-export default Groceries;
+export default Electronic;

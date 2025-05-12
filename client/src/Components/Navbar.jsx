@@ -25,9 +25,13 @@ function Navbar() {
       if (response.status === 200) {
         setSearchData(response?.data?.data);
         setShowSearchData(true);
+        setSearchQuery("");
       }
     } catch (error) {
       console.error("Error during search:", error);
+      setSearchData([]);
+      setShowSearchData(false);
+      setSearchQuery("");
     }
   };
 
@@ -51,7 +55,7 @@ function Navbar() {
             {/* Desktop Menu */}
             <div className="hidden md:flex items-center space-x-8">
               <div className="flex space-x-6">
-                {["everything", "groceries", "juice"].map((item) => (
+                {["everything", "groceries", "electronic"].map((item) => (
                   <NavLink
                     key={item}
                     to={`/${item}`}

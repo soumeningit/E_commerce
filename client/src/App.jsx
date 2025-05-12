@@ -3,7 +3,7 @@ import { Routes, Route } from "react-router-dom";
 import Groceries from "./Pages/Groceries";
 import Navbar from "./Components/Navbar";
 import Everything from "./Pages/Everything";
-import Juice from "./Pages/Juice";
+import Juice from "./Pages/Electronic";
 import About from "./Pages/About";
 import Contact from "./Pages/Contact";
 import FormPage from "./Pages/FromPage";
@@ -32,6 +32,7 @@ import SellProduct from "./Dashboard/SellProduct";
 import VerifyUser from "./Dashboard/VerifyUser";
 import ProductPage from "./Pages/ProductPage";
 import OrderDetails from "./Pages/OrderDetails";
+import Electronic from "./Pages/Electronic";
 
 function App() {
   const { user } = useSelector((state) => state.auth);
@@ -43,7 +44,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/groceries" element={<Groceries />} />
         <Route path="/everything" element={<Everything />} />
-        <Route path="/juice" element={<Juice />} />
+        <Route path="/electronic" element={<Electronic />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/about" element={<About />} />
         <Route path="/from" element={<FormPage />} />

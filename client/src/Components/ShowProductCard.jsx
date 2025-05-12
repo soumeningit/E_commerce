@@ -20,9 +20,10 @@ function ShowProductCard({
   const { token, user } = useSelector((state) => state.auth);
 
   const [showModal, setShowModal] = useState(false);
-  const [quantity, setQuantity] = useState(1); // Local quantity state
+  const [quantity, setQuantity] = useState(1);
 
-  const addToCart = async () => {
+  const addToCart = async (e) => {
+    e.stopPropagation();
     if (!token) {
       setShowModal(true);
     } else {
@@ -37,67 +38,77 @@ function ShowProductCard({
       try {
         const response = await addItemsToCart("POST", data, token);
         if (response.status === 200) {
-          toast.success("Product added to cart successfully");
+          toast.success("Product added to cart");
         }
       } catch (error) {
-        console.error("Error adding product to cart:", error);
+        console.error("Add to cart error:", error);
       }
       dispatch(addProduct(data));
     }
   };
 
-  const handleIncrease = () => setQuantity((prev) => prev + 1);
-  const handleDecrease = () => setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
+  const handleIncrease = (e) => {
+    e.stopPropagation();
+    setQuantity((prev) => prev + 1);
+  };
+
+  const handleDecrease = (e) => {
+    e.stopPropagation();
+    setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
+  };
 
   return (
-    <div className="group relative flex flex-col w-full max-w-sm mx-auto bg-white rounded-2xl shadow-md transition-all duration-500 ease-in-out transform hover:shadow-lg hover:-translate-y-2 hover:scale-[1.02]">
-      {/* Image */}
-      <div className="overflow-hidden rounded-t-2xl">
+    <>
+      <div
+        onClick={() => navigate(`/${productName}/product-details/${productId}`)}
+        className="flex items-start gap-4 p-3 border rounded-lg bg-white hover:shadow-md cursor-pointer transition-all duration-200 max-w-xl mx-auto"
+      >
+        {/* Product Image */}
         <img
           src={image}
           alt={productName}
-          className="w-full h-48 object-cover transition-transform duration-500 ease-in-out group-hover:scale-105"
-          loading="lazy"
+          className="w-24 h-24 object-contain rounded-md"
         />
-      </div>
 
-      {/* Content */}
-      <div className="p-4 flex flex-col justify-between h-full space-y-2">
-        <h2 className="text-lg md:text-xl font-semibold text-gray-800 line-clamp-1">
-          {productName}
-        </h2>
+        {/* Product Info */}
+        <div className="flex-1 space-y-1">
+          <h2 className="text-base font-semibold text-gray-800 line-clamp-1">
+            {productName}
+          </h2>
 
-        <p className="text-sm text-gray-600 line-clamp-2">{shortDescription}</p>
+          <p className="text-sm text-gray-600 line-clamp-2 max-w-[15rem]">
+            {shortDescription}
+          </p>
 
-        <div className="flex items-center text-gray-700 text-base font-medium">
-          <LuIndianRupee className="text-xl" />
-          <span>{productPrice}</span>
+          <div className="text-sm text-gray-800 flex items-center font-medium">
+            <LuIndianRupee className="mr-1 text-base" />
+            <span>{productPrice}</span>
+          </div>
+
+          {/* Quantity Controls & Add to Cart */}
+          <div className="flex justify-between items-center mt-2">
+            <div className="flex items-center gap-2 text-gray-600">
+              <AiOutlineMinusCircle
+                size={20}
+                className="cursor-pointer hover:text-red-500"
+                onClick={handleDecrease}
+              />
+              <span>{quantity}</span>
+              <AiOutlinePlusCircle
+                size={20}
+                className="cursor-pointer hover:text-green-600"
+                onClick={handleIncrease}
+              />
+            </div>
+
+            <button
+              onClick={addToCart}
+              className="text-xs px-3 py-1 bg-yellow-500 hover:bg-yellow-600 text-black font-medium rounded transition cursor-pointer"
+            >
+              Add to Cart
+            </button>
+          </div>
         </div>
-
-        {/* Quantity Controls */}
-        <div className="flex items-center justify-between mt-2 gap-3 text-gray-700">
-          <button onClick={handleDecrease}>
-            <AiOutlineMinusCircle
-              size={24}
-              className="hover:text-red-500 transition cursor-pointer"
-            />
-          </button>
-          <span className="text-base font-medium">{quantity}</span>
-          <button onClick={handleIncrease}>
-            <AiOutlinePlusCircle
-              size={24}
-              className="hover:text-green-600 transition cursor-pointer"
-            />
-          </button>
-        </div>
-
-        {/* Add to Cart */}
-        <button
-          onClick={addToCart}
-          className="w-full py-2 mt-3 rounded-lg bg-gradient-to-r from-orange-500 to-red-500 text-white font-medium shadow-md hover:brightness-110 transition duration-300 cursor-pointer"
-        >
-          Add To Cart
-        </button>
       </div>
 
       {/* Modal */}
@@ -114,7 +125,7 @@ function ShowProductCard({
           onCancel={() => setShowModal(false)}
         />
       )}
-    </div>
+    </>
   );
 }
 

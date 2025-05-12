@@ -8,7 +8,8 @@ const {
     UPDATE_CATEGORY_API,
     DELETE_CATEGORY_API,
     GET_ALL_CATEGORY_API,
-    GET_ITEMS_BY_CATEGORY_API
+    GET_ITEMS_BY_CATEGORY_API,
+    GET_ITEMS_BY_CATEGORY_NAME_API
 } = CATEGORY_API_ENDPOINTS;
 
 export async function getCategoriesAPI(method, token) {
@@ -54,6 +55,18 @@ export async function getAllCategory(method) {
 export async function findItemsByCategory(method, id) {
     try {
         const response = await apiConnector(method, GET_ITEMS_BY_CATEGORY_API, null, { id: id });
+        if (!response.data.success) {
+            throw new Error(response.data.message);
+        }
+        return response;
+    } catch (error) {
+        throw error;
+    }
+}
+
+export async function findItemsByCategoryName(method, name) {
+    try {
+        const response = await apiConnector(method, GET_ITEMS_BY_CATEGORY_NAME_API, null, { categoryName: name });
         if (!response.data.success) {
             throw new Error(response.data.message);
         }

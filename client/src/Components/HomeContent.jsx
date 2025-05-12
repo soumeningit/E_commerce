@@ -13,13 +13,16 @@ function HomeContent() {
       <div className="mt-10 w-[40%] h-full items-start ">
         <img src={leaf} alt="leaf-img" className="ml-8" />
         <div className="flex flex-col items-start justify-center gap-y-7 ml-8">
-          <p className="text-md font-semibold">Best Quality Products</p>
-          <h1 className="text-4xl font-bold">Join The Organic Movement!</h1>
-          <p className="text-md font-semibold mt-16 items-start">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut elit
-            tellus, luctus nec ullamcorper mattis, pulvinar dapibus leo.
+          <p className="text-md font-semibold">
+            Everything You Need, All in One Place
           </p>
-          <NavLink to="/groceries">
+          <h1 className="text-4xl font-bold">Discover Smart Shopping Today!</h1>
+          <p className="text-md font-semibold mt-16 items-start">
+            Explore top deals, trending products, and unbeatable prices across
+            electronics, fashion, home essentials, and more. Fast delivery,
+            secure payments, and 24/7 customer support — all tailored for you.
+          </p>
+          <NavLink to="/everything">
             <button className="bg-green-500 flex px-2 py-2 rounded-md text-white hover:bg-green-400 transition-all mt-16 cursor-pointer">
               <IoCartOutline className="m-1" />{" "}
               <span className="">Shop Now</span>

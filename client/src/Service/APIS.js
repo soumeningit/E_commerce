@@ -2,8 +2,6 @@ const BASE_URL = process.env.NODE_ENV === "production" ?
     "https://ecombackend-0ku8.onrender.com/api" :
     "http://localhost:4000/api";
 
-console.log(`API URL: ${BASE_URL}`)
-
 
 export const AUTH_API_ENDPOINTS = {
     SENDOTP_API: BASE_URL + "/auth/sendOTP",
@@ -28,7 +26,8 @@ export const CATEGORY_API_ENDPOINTS = {
     UPDATE_CATEGORY_API: BASE_URL + "/category",
     DELETE_CATEGORY_API: BASE_URL + "/category",
     GET_ALL_CATEGORY_API: BASE_URL + "/category/get-categories",
-    GET_ITEMS_BY_CATEGORY_API: BASE_URL + "/category/get-products-by-category"
+    GET_ITEMS_BY_CATEGORY_API: BASE_URL + "/category/get-products-by-category",
+    GET_ITEMS_BY_CATEGORY_NAME_API: BASE_URL + "/category/get-products-by-category-name",
 }
 
 export const PAYMENT_API_ENDPOINTS = {
@@ -51,6 +50,7 @@ export const PRODUCT_API_ENDPOINTS = {
 
 export const USER_API_ENDPOINTS = {
     GET_PRODUCT_DETAILS: BASE_URL + '/user/getProductsDetails',
+    SUBMIT_CONTACT_US_API: BASE_URL + "/user/submit-contact-us-data",
 }
 
 export const ADMIN_API_ENDPOINTS = {
