@@ -68,8 +68,6 @@ function AdminNotifications() {
       } else {
         console.error("Error approving users:", response.data.message);
       }
-
-      // setUserData((prev) => prev.filter((user) => user.user_id !== userId));
     } catch (error) {
       console.error("Error approving user:", error);
     } finally {
@@ -150,6 +148,7 @@ function AdminNotifications() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="p-4 text-left">
+                    {/* Select All / Deselect All */}
                     <input
                       type="checkbox"
                       onChange={(e) =>

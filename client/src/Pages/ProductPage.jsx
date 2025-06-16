@@ -50,16 +50,16 @@ function ProductPage() {
     }
   }, []);
 
-  function handleBuyNow(price, listedFor) {
-    if (!user || !token) {
-      setShowModal(true);
-      return;
-    } else {
-      navigate(`/product-details/${usedFor}/${name}/pid_${id}/sell-product`, {
-        state: { price: price, productId: id, listedFor: listedFor },
-      });
-    }
-  }
+  // function handleBuyNow(price, listedFor) {
+  //   if (!user || !token) {
+  //     setShowModal(true);
+  //     return;
+  //   } else {
+  //     navigate(`/product-details/${listedFor}/${name}/pid_${id}/sell-product`, {
+  //       state: { price: price, productId: id, listedFor: listedFor },
+  //     });
+  //   }
+  // }
 
   function handleAddToCart(price, productId) {
     if (!user || !token) {
@@ -154,14 +154,14 @@ function ProductPage() {
                       <h1 className="text-2xl font-bold text-green-600 flex items-center gap-1">
                         <span>₹{item?.product_mrp}</span>
                       </h1>
-                      <button
+                      {/* <button
                         onClick={() =>
                           handleBuyNow(item?.product_price, item?.listed_for)
                         }
                         className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg shadow transition cursor-pointer"
                       >
                         Buy Now
-                      </button>
+                      </button> */}
                       <button
                         onClick={() => {
                           setTotalPrice(

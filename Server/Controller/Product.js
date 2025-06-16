@@ -385,7 +385,7 @@ exports.getParticularProductDetails = async (req, res) => {
                     u.lastName,
                     u.email
             FROM product_details AS p
-            JOIN categories AS C ON p.category_id = c.id
+            JOIN categories AS c ON p.category_id = c.id
             JOIN product_description AS pd ON pd.product_id = p.id
             JOIN users AS u ON u.id = p.created_by
             WHERE p.id = ?;`

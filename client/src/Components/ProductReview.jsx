@@ -137,14 +137,14 @@ function ProductReview({ id }) {
       </div>
 
       {/* Write a Review Button */}
-      <div className="mt-8 text-center">
+      {/* <div className="mt-8 text-center">
         <button
           onClick={() => alert("Review submission form to be implemented")}
           className="bg-indigo-600 text-white px-6 py-3 rounded-lg shadow hover:bg-indigo-700 transition focus:outline-none focus:ring-2 focus:ring-indigo-500"
         >
           Write a Review
         </button>
-      </div>
+      </div> */}
     </div>
   );
 }

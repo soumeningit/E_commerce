@@ -1,4 +1,5 @@
 import React from "react";
+import user_avt from "../image/user.jpeg";
 
 function AboutPage() {
   // Dummy team data
@@ -108,7 +109,7 @@ function AboutPage() {
               className="bg-white p-6 rounded-lg shadow-md text-center hover:shadow-lg transition"
             >
               <img
-                src={member.image}
+                src={user_avt}
                 alt={member.name}
                 className="w-24 h-24 rounded-full mx-auto mb-4 object-cover"
               />
